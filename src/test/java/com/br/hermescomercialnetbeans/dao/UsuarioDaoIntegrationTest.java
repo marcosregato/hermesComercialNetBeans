@@ -70,13 +70,11 @@ class UsuarioDaoIntegrationTest {
     @DisplayName("Deve listar todos os usuários")
     void testListarUsuarios() throws SQLException {
         // Criar alguns usuários
-        Usuario usuario1 = criarUsuarioTeste();
+        Usuario usuario1 = criarUsuarioTeste("teste1." + System.currentTimeMillis());
         usuario1.setNome("Usuário Teste 1");
-        usuario1.setLogin("teste1");
         
-        Usuario usuario2 = criarUsuarioTeste();
+        Usuario usuario2 = criarUsuarioTeste("teste2." + System.currentTimeMillis());
         usuario2.setNome("Usuário Teste 2");
-        usuario2.setLogin("teste2");
         
         usuarioDao.salvar(usuario1);
         usuarioDao.salvar(usuario2);
@@ -99,16 +97,16 @@ class UsuarioDaoIntegrationTest {
     @Test
     @DisplayName("Deve buscar usuário por login")
     void testBuscarPorLogin() throws SQLException {
-        // Criar usuário
-        Usuario usuario = criarUsuarioTeste();
-        usuario.setLogin("login.teste");
+        // Criar usuário com login único
+        String loginUnico = "login.teste." + System.currentTimeMillis();
+        Usuario usuario = criarUsuarioTeste(loginUnico);
         usuarioDao.salvar(usuario);
         
         // Buscar por login
-        Usuario usuarioEncontrado = usuarioDao.buscarPorLogin("login.teste");
+        Usuario usuarioEncontrado = usuarioDao.buscarPorLogin(loginUnico);
         assertNotNull(usuarioEncontrado);
         assertEquals(usuario.getId(), usuarioEncontrado.getId());
-        assertEquals("login.teste", usuarioEncontrado.getLogin());
+        assertEquals(loginUnico, usuarioEncontrado.getLogin());
     }
     
     @Test
@@ -162,9 +160,13 @@ class UsuarioDaoIntegrationTest {
     }
     
     private Usuario criarUsuarioTeste() {
+        return criarUsuarioTeste("joao.silva." + System.currentTimeMillis());
+    }
+    
+    private Usuario criarUsuarioTeste(String login) {
         Usuario usuario = new Usuario();
         usuario.setNome("João Silva");
-        usuario.setLogin("joao.silva");
+        usuario.setLogin(login);
         usuario.setSenha("senha123");
         usuario.setEmail("joao@teste.com");
         usuario.setCargo("Vendedor");

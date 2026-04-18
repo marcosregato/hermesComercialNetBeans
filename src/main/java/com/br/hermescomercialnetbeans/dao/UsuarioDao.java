@@ -27,7 +27,7 @@ public class UsuarioDao {
         "cpf, data_nascimento, telefone, endereco, bairro, cidade, estado, cep, limite_credito, pontos_fidelidade, " +
         "cnpj, razao_social, nome_fantasia, inscricao_estadual, telefone_contato, email_contato, " +
         "endereco_fornecedor, condicoes_pagamento, prazo_entrega) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     private static final String UPDATE_USUARIO = 
         "UPDATE usuarios SET nome = ?, login = ?, senha = ?, email = ?, cargo = ?, nivel_acesso = ?, " +
@@ -76,28 +76,28 @@ public class UsuarioDao {
             stmt.setTimestamp(7, Timestamp.valueOf(usuario.getDataCadastro()));
             stmt.setTimestamp(8, usuario.getUltimoAcesso() != null ? Timestamp.valueOf(usuario.getUltimoAcesso()) : null);
             stmt.setBoolean(9, usuario.getAtivo());
-            stmt.setString(10, usuario.getPermissaoVenda());
-            stmt.setString(11, usuario.getPermissaoCaixa());
-            stmt.setString(12, usuario.getPermissaoRelatorio());
+            stmt.setBoolean(10, "SIM".equals(usuario.getPermissaoVenda()));
+            stmt.setBoolean(11, "SIM".equals(usuario.getPermissaoCaixa()));
+            stmt.setBoolean(12, "SIM".equals(usuario.getPermissaoRelatorio()));
             stmt.setString(13, usuario.getTipoUsuario());
             
             // Campos específicos de Funcionário
             stmt.setString(14, usuario.getMatricula());
             stmt.setString(15, usuario.getDepartamento());
             stmt.setDouble(16, usuario.getSalario() != null ? usuario.getSalario() : 0.0);
-            stmt.setTimestamp(17, usuario.getDataAdmissao() != null ? Timestamp.valueOf(usuario.getDataAdmissao()) : null);
+            stmt.setDate(17, usuario.getDataAdmissao() != null ? java.sql.Date.valueOf(usuario.getDataAdmissao().toLocalDate()) : null);
             stmt.setString(18, usuario.getDataDemissao());
             
             // Campos específicos de Cliente
             stmt.setString(19, usuario.getCpf());
-            stmt.setString(20, usuario.getDataNascimento());
+            stmt.setDate(20, usuario.getDataNascimento() != null ? java.sql.Date.valueOf(usuario.getDataNascimento()) : null);
             stmt.setString(21, usuario.getTelefone());
             stmt.setString(22, usuario.getEndereco());
             stmt.setString(23, usuario.getBairro());
             stmt.setString(24, usuario.getCidade());
             stmt.setString(25, usuario.getEstado());
             stmt.setString(26, usuario.getCep());
-            stmt.setString(27, usuario.getLimiteCredito());
+            stmt.setDouble(27, usuario.getLimiteCredito() != null ? Double.parseDouble(usuario.getLimiteCredito()) : 0.0);
             stmt.setInt(28, usuario.getPontosFidelidade() != null ? usuario.getPontosFidelidade() : 0);
             
             // Campos específicos de Fornecedor
@@ -151,9 +151,9 @@ public class UsuarioDao {
             stmt.setString(paramIndex++, usuario.getNivelAcesso());
             stmt.setTimestamp(paramIndex++, usuario.getUltimoAcesso() != null ? Timestamp.valueOf(usuario.getUltimoAcesso()) : null);
             stmt.setBoolean(paramIndex++, usuario.getAtivo());
-            stmt.setString(paramIndex++, usuario.getPermissaoVenda());
-            stmt.setString(paramIndex++, usuario.getPermissaoCaixa());
-            stmt.setString(paramIndex++, usuario.getPermissaoRelatorio());
+            stmt.setBoolean(paramIndex++, "SIM".equals(usuario.getPermissaoVenda()));
+            stmt.setBoolean(paramIndex++, "SIM".equals(usuario.getPermissaoCaixa()));
+            stmt.setBoolean(paramIndex++, "SIM".equals(usuario.getPermissaoRelatorio()));
             stmt.setString(paramIndex++, usuario.getTipoUsuario());
             
             // Campos específicos de Funcionário
@@ -165,14 +165,14 @@ public class UsuarioDao {
             
             // Campos específicos de Cliente
             stmt.setString(paramIndex++, usuario.getCpf());
-            stmt.setString(paramIndex++, usuario.getDataNascimento());
+            stmt.setDate(paramIndex++, usuario.getDataNascimento() != null ? java.sql.Date.valueOf(usuario.getDataNascimento()) : null);
             stmt.setString(paramIndex++, usuario.getTelefone());
             stmt.setString(paramIndex++, usuario.getEndereco());
             stmt.setString(paramIndex++, usuario.getBairro());
             stmt.setString(paramIndex++, usuario.getCidade());
             stmt.setString(paramIndex++, usuario.getEstado());
             stmt.setString(paramIndex++, usuario.getCep());
-            stmt.setString(paramIndex++, usuario.getLimiteCredito());
+            stmt.setDouble(paramIndex++, usuario.getLimiteCredito() != null ? Double.parseDouble(usuario.getLimiteCredito()) : 0.0);
             stmt.setInt(paramIndex++, usuario.getPontosFidelidade() != null ? usuario.getPontosFidelidade() : 0);
             
             // Campos específicos de Fornecedor

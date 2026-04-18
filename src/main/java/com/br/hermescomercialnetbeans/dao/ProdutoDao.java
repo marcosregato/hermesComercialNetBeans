@@ -7,6 +7,7 @@ package com.br.hermescomercialnetbeans.dao;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Date;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +54,7 @@ public class ProdutoDao  {
 
 
 	public void salvar(Produto produto) {
-        String query ="INSERT INTO produto (nome, categoria, subCategoria, codigo, marca, data_compra, preco, preco_compra, estoque, estoque_minimo, ativo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String query ="INSERT INTO produto (nome, categoria, sub_categoria, codigo, marca, data_compra, preco, preco_compra, estoque, estoque_minimo, ativo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(query)) {
 
 			ps.setString(1, produto.getNome());
@@ -61,7 +62,8 @@ public class ProdutoDao  {
 			ps.setString(3, produto.getSubCategoria());
 			ps.setString(4, produto.getCodigo());
 			ps.setString(5, produto.getMarca());
-			ps.setString(6, produto.getDataCompra());
+			ps.setDate(6, produto.getDataCompra() != null && !produto.getDataCompra().isEmpty() ? 
+				Date.valueOf(produto.getDataCompra()) : null);
 			ps.setBigDecimal(7, produto.getPreco());
 			ps.setBigDecimal(8, produto.getPrecoCompra());
 			ps.setInt(9, produto.getEstoque());
@@ -76,15 +78,26 @@ public class ProdutoDao  {
 
 	}
 
-	public void remover(Integer id) {
+	public void remover(Integer id) throws SQLException {
+		// Verificar se produto está sendo usado em vendas
+		String checkQuery = "SELECT COUNT(*) FROM item_venda WHERE produto_id = ?";
+		try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(checkQuery)) {
+			ps.setInt(1, id);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next() && rs.getInt(1) > 0) {
+				throw new SQLException("Produto não pode ser excluído pois está registrado em vendas!");
+			}
+		}
+		
+		// Se não estiver sendo usado, pode excluir
 		String query = "DELETE FROM produto WHERE id=?";
 		try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(query)) {
-
 			ps.setInt(1, id);
 			ps.executeUpdate();
-
+			logger.info("Produto ID " + id + " excluído com sucesso");
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
+			throw e;
 		}
 	}
 
@@ -97,7 +110,8 @@ public class ProdutoDao  {
 			ps.setString(3, produto.getSubCategoria());
 			ps.setString(4, produto.getCodigo());
 			ps.setString(5, produto.getMarca());
-			ps.setString(6, produto.getDataCompra());
+			ps.setDate(6, produto.getDataCompra() != null && !produto.getDataCompra().isEmpty() ? 
+				Date.valueOf(produto.getDataCompra()) : null);
 			ps.setBigDecimal(7, produto.getPreco());
 			ps.setBigDecimal(8, produto.getPrecoCompra());
 			ps.setInt(9, produto.getEstoque());
@@ -149,7 +163,7 @@ public class ProdutoDao  {
      * @return Produto encontrado ou null
      */
     public Produto buscarPorCodigo(String codigo) {
-        String query = "SELECT * FROM produtos WHERE codigo = ? AND ativo = true";
+        String query = "SELECT * FROM produto WHERE codigo = ? AND ativo = true";
         
         try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(query)) {
             ps.setString(1, codigo);

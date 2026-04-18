@@ -11,8 +11,25 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.io.font.constants.StandardFonts;
 
 /**
  * Tela elegante para Controle de Estoque
@@ -516,13 +533,57 @@ public class TelaEstoque extends JInternalFrame {
         try {
             List<Produto> produtos = produtoDao.listar();
             
-            StringBuilder relatorio = new StringBuilder();
-            relatorio.append("RELATÓRIO DE ESTOQUE\n");
-            relatorio.append("=" .repeat(50)).append("\n");
-            relatorio.append("Data: ").append(java.time.LocalDateTime.now().format(
-                java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))).append("\n");
-            relatorio.append("=" .repeat(50)).append("\n\n");
+            // Criar diretório de relatórios se não existir
+            String diretorioRelatorios = "C:\\RelatorioSistema";
+            File diretorio = new File(diretorioRelatorios);
+            if (!diretorio.exists()) {
+                diretorio.mkdirs();
+                logger.info("Diretório de relatórios criado: " + diretorioRelatorios);
+            }
             
+            // Nome do arquivo PDF
+            String nomeArquivo = "relatorio_estoque_" + 
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
+            String caminhoCompleto = diretorioRelatorios + "\\" + nomeArquivo;
+            
+            // Criar documento PDF
+            PdfWriter writer = new PdfWriter(new FileOutputStream(caminhoCompleto));
+            PdfDocument pdf = new PdfDocument(writer);
+            Document document = new Document(pdf);
+            
+            // Fontes
+            PdfFont fontBold = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+            PdfFont fontNormal = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            
+            // Título
+            Paragraph titulo = new Paragraph("RELATÓRIO DE ESTOQUE")
+                .setFont(fontBold)
+                .setFontSize(18)
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginBottom(20);
+            document.add(titulo);
+            
+            // Data e hora
+            Paragraph dataHora = new Paragraph("Data: " + 
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
+                .setFont(fontNormal)
+                .setFontSize(12)
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginBottom(20);
+            document.add(dataHora);
+            
+            // Tabela de produtos
+            Table tabela = new Table(UnitValue.createPercentArray(new float[]{15, 40, 15, 15, 15}))
+                .useAllAvailableWidth();
+            
+            // Cabeçalho da tabela
+            tabela.addHeaderCell(new Cell().add(new Paragraph("Código").setFont(fontBold)));
+            tabela.addHeaderCell(new Cell().add(new Paragraph("Produto").setFont(fontBold)));
+            tabela.addHeaderCell(new Cell().add(new Paragraph("Estoque").setFont(fontBold)));
+            tabela.addHeaderCell(new Cell().add(new Paragraph("Preço").setFont(fontBold)));
+            tabela.addHeaderCell(new Cell().add(new Paragraph("Valor Total").setFont(fontBold)));
+            
+            // Dados dos produtos
             BigDecimal valorTotal = BigDecimal.ZERO;
             int estoqueBaixo = 0;
             int semEstoque = 0;
@@ -532,10 +593,11 @@ public class TelaEstoque extends JInternalFrame {
                 BigDecimal preco = produto.getPreco() != null ? produto.getPreco() : BigDecimal.ZERO;
                 BigDecimal valorTotalProduto = preco.multiply(new BigDecimal(estoque));
                 
-                relatorio.append(String.format("Código: %s\n", produto.getCodigo()));
-                relatorio.append(String.format("Nome: %s\n", produto.getNome()));
-                relatorio.append(String.format("Estoque: %d\n", estoque));
-                relatorio.append(String.format("Valor Total: R$ %.2f\n\n", valorTotalProduto));
+                tabela.addCell(new Cell().add(new Paragraph(produto.getCodigo() != null ? produto.getCodigo() : "").setFont(fontNormal)));
+                tabela.addCell(new Cell().add(new Paragraph(produto.getNome() != null ? produto.getNome() : "").setFont(fontNormal)));
+                tabela.addCell(new Cell().add(new Paragraph(String.valueOf(estoque)).setFont(fontNormal)));
+                tabela.addCell(new Cell().add(new Paragraph(String.format("R$ %.2f", preco)).setFont(fontNormal)));
+                tabela.addCell(new Cell().add(new Paragraph(String.format("R$ %.2f", valorTotalProduto)).setFont(fontNormal)));
                 
                 valorTotal = valorTotal.add(valorTotalProduto);
                 
@@ -544,30 +606,36 @@ public class TelaEstoque extends JInternalFrame {
                 if (estoque == 0) semEstoque++;
             }
             
-            relatorio.append("=" .repeat(50)).append("\n");
-            relatorio.append("RESUMO:\n");
-            relatorio.append(String.format("Total de Produtos: %d\n", produtos.size()));
-            relatorio.append(String.format("Valor Total do Estoque: R$ %.2f\n", valorTotal));
-            relatorio.append(String.format("Produtos com Estoque Baixo: %d\n", estoqueBaixo));
-            relatorio.append(String.format("Produtos sem Estoque: %d\n", semEstoque));
+            document.add(tabela);
             
-            // Salvar relatório em arquivo
-            try (java.io.FileWriter writer = new java.io.FileWriter("relatorio_estoque_" + 
-                java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".txt");
-                 java.io.PrintWriter printer = new java.io.PrintWriter(writer)) {
-                
-                printer.print(relatorio.toString());
-                printer.flush();
-                
-                JOptionPane.showMessageDialog(this, 
-                    "Relatório gerado com sucesso!\nArquivo: relatorio_estoque.txt", 
-                    "Sucesso", 
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
+            // Resumo
+            document.add(new Paragraph("\n"));
+            Paragraph resumoTitulo = new Paragraph("RESUMO:")
+                .setFont(fontBold)
+                .setFontSize(14)
+                .setMarginBottom(10);
+            document.add(resumoTitulo);
+            
+            Paragraph resumo = new Paragraph()
+                .setFont(fontNormal)
+                .setFontSize(12)
+                .add(String.format("Total de Produtos: %d\n", produtos.size()))
+                .add(String.format("Valor Total do Estoque: R$ %.2f\n", valorTotal))
+                .add(String.format("Produtos com Estoque Baixo: %d\n", estoqueBaixo))
+                .add(String.format("Produtos sem Estoque: %d\n", semEstoque));
+            document.add(resumo);
+            
+            // Fechar documento
+            document.close();
+            
+            JOptionPane.showMessageDialog(this, 
+                "Relatório PDF gerado com sucesso!\nArquivo: " + caminhoCompleto, 
+                "Sucesso", 
+                JOptionPane.INFORMATION_MESSAGE);
             
         } catch (Exception e) {
-            logger.error("Erro ao gerar relatório: " + e.getMessage(), e);
-            JOptionPane.showMessageDialog(this, "Erro ao gerar relatório!", "Erro", JOptionPane.ERROR_MESSAGE);
+            logger.error("Erro ao gerar relatório PDF: " + e.getMessage(), e);
+            JOptionPane.showMessageDialog(this, "Erro ao gerar relatório PDF: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
     

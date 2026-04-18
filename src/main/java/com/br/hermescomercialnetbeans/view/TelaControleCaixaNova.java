@@ -266,15 +266,29 @@ public class TelaControleCaixaNova extends JInternalFrame {
     
     private void abrirCaixa() {
         try {
+            logger.info("Iniciando processo de abertura de caixa");
+            
+            // Verificar se já há caixa aberto
+            if (caixaAberto != null) {
+                logger.warn("Tentativa de abrir caixa quando já existe um caixa aberto - ID: " + caixaAberto.getId());
+                JOptionPane.showMessageDialog(this, "Já existe um caixa aberto! Feche o caixa atual antes de abrir um novo.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
             String valorStr = txtValor.getText().trim();
+            logger.info("Valor informado para abertura: '" + valorStr + "'");
+            
             if (valorStr.isEmpty()) {
+                logger.warn("Valor inicial não informado");
                 JOptionPane.showMessageDialog(this, "Informe o valor inicial do caixa!", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             
             BigDecimal valorInicial = new BigDecimal(valorStr.replace(",", "."));
+            logger.info("Valor inicial parseado: R$ " + valorInicial);
             
             if (valorInicial.compareTo(BigDecimal.ZERO) < 0) {
+                logger.warn("Valor inicial negativo: R$ " + valorInicial);
                 JOptionPane.showMessageDialog(this, "Valor inicial não pode ser negativo!", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -286,8 +300,14 @@ public class TelaControleCaixaNova extends JInternalFrame {
             movimento.setUsuarioId(usuarioLogado != null ? usuarioLogado.getId() : 1L);
             movimento.setUsuarioNome(usuarioLogado != null ? usuarioLogado.getNome() : "Sistema");
             movimento.setObservacao(txtObservacao.getText().trim());
+            movimento.setDataHora(LocalDateTime.now());
+            
+            logger.info("Movimento de abertura criado - Tipo: " + movimento.getTipoMovimento() + ", Valor: " + movimento.getValor());
+            logger.info("Usuário: " + movimento.getUsuarioNome() + " (ID: " + movimento.getUsuarioId() + ")");
+            logger.info("Observação: '" + movimento.getObservacao() + "'");
             
             movimentoCaixaDao.salvar(movimento);
+            logger.info("Movimento de abertura salvo com sucesso");
             
             JOptionPane.showMessageDialog(this, "Caixa aberto com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
             
@@ -296,8 +316,10 @@ public class TelaControleCaixaNova extends JInternalFrame {
             txtObservacao.setText("");
             
             // Atualizar status
+            logger.info("Atualizando status do caixa após abertura");
             verificarStatusCaixa();
             carregarMovimentos();
+            logger.info("Abertura de caixa concluída com sucesso");
             
         } catch (Exception e) {
             logger.error("Erro ao abrir caixa: " + e.getMessage(), e);
@@ -307,13 +329,27 @@ public class TelaControleCaixaNova extends JInternalFrame {
     
     private void fecharCaixa() {
         try {
+            logger.info("Iniciando processo de fechamento de caixa");
+            
             int confirmacao = JOptionPane.showConfirmDialog(this, 
                 "Deseja fechar o caixa?", 
                 "Confirmar Fechamento", 
                 JOptionPane.YES_NO_OPTION);
                 
             if (confirmacao == JOptionPane.YES_OPTION) {
+                logger.info("Usuário confirmou fechamento do caixa");
+                
                 BigDecimal saldoAtual = calcularSaldoAtual();
+                logger.info("Saldo atual calculado: R$ " + saldoAtual);
+                
+                // Verificar se há caixa aberto
+                if (caixaAberto == null) {
+                    logger.warn("Tentativa de fechar caixa sem caixa aberto");
+                    JOptionPane.showMessageDialog(this, "Não há caixa aberto para fechar!", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                
+                logger.info("Caixa aberto encontrado - ID: " + caixaAberto.getId() + ", Data: " + caixaAberto.getDataHora());
                 
                 // Criar movimento de fechamento
                 MovimentoCaixa movimento = new MovimentoCaixa();
@@ -321,17 +357,23 @@ public class TelaControleCaixaNova extends JInternalFrame {
                 movimento.setValor(saldoAtual.doubleValue());
                 movimento.setUsuarioId(usuarioLogado != null ? usuarioLogado.getId() : 1L);
                 movimento.setUsuarioNome(usuarioLogado != null ? usuarioLogado.getNome() : "Sistema");
-                movimento.setObservacao("Fechamento automático do caixa");
+                movimento.setObservacao("Fechamento automático do caixa. Saldo: R$ " + saldoAtual);
+                movimento.setDataHora(LocalDateTime.now());
+                
+                logger.info("Movimento de fechamento criado - Tipo: " + movimento.getTipoMovimento() + ", Valor: " + movimento.getValor());
                 
                 movimentoCaixaDao.salvar(movimento);
+                logger.info("Movimento de fechamento salvo com sucesso");
                 
                 JOptionPane.showMessageDialog(this, 
                     "Caixa fechado com sucesso!\nSaldo Final: R$ " + String.format("%.2f", saldoAtual), 
                     "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                 
                 // Atualizar status
+                logger.info("Atualizando status do caixa após fechamento");
                 verificarStatusCaixa();
                 carregarMovimentos();
+                logger.info("Fechamento de caixa concluído com sucesso");
             }
             
         } catch (Exception e) {

@@ -1,6 +1,7 @@
 package com.br.hermescomercialnetbeans.view;
 
 import com.br.hermescomercialnetbeans.dao.ProdutoDao;
+import com.br.hermescomercialnetbeans.connectionDB.PostgreSQLConnection;
 import com.br.hermescomercialnetbeans.model.Produto;
 import org.apache.logging.log4j.LogManager;
 
@@ -12,6 +13,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -32,7 +35,6 @@ public class TelaProduto extends JInternalFrame {
     private JTable tabelaProdutos;
     
     // Campos do formulário
-    private JTextField txtId;
     private JTextField txtNome;
     private JTextField txtCodigo;
     private JTextField txtDescricao;
@@ -86,10 +88,6 @@ public class TelaProduto extends JInternalFrame {
         panelPesquisa = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         
         // Campos do formulário
-        txtId = new JTextField(10);
-        txtId.setEditable(false);
-        txtId.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        
         txtNome = new JTextField(30);
         txtNome.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         txtCodigo = new JTextField(15);
@@ -166,12 +164,8 @@ public class TelaProduto extends JInternalFrame {
         // Linha 1: ID e Nome
         gbc.gridx = 0; gbc.gridy = 0;
         gbc.weightx = 0;
-        panelFormulario.add(new JLabel("ID:"), gbc);
-        gbc.gridx = 1;
-        panelFormulario.add(txtId, gbc);
-        gbc.gridx = 2;
         panelFormulario.add(new JLabel("Nome:"), gbc);
-        gbc.gridx = 3;
+        gbc.gridx = 1;
         gbc.weightx = 1.0;
         panelFormulario.add(txtNome, gbc);
         
@@ -354,6 +348,41 @@ public class TelaProduto extends JInternalFrame {
         if (confirmacao == JOptionPane.YES_OPTION) {
             try {
                 Integer id = (Integer) modeloTabela.getValueAt(linhaSelecionada, 0);
+                
+                // Verificar se produto está sendo usado em vendas antes de tentar excluir
+                String checkQuery = "SELECT COUNT(*) FROM item_venda WHERE produto_id = ?";
+                try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(checkQuery)) {
+                    ps.setInt(1, id);
+                    ResultSet rs = ps.executeQuery();
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        // Produto está em uso, oferecer desativar
+                        int opcao = JOptionPane.showOptionDialog(this,
+                            "Este produto não pode ser excluído pois está registrado em vendas.\n\n" +
+                            "Deseja desativá-lo em vez de excluir?\n" +
+                            "Produtos desativados não aparecerão mais nas vendas.",
+                            "Produto em Uso",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            new String[]{"Desativar Produto", "Cancelar"},
+                            "Cancelar");
+                            
+                        if (opcao == JOptionPane.YES_OPTION) {
+                            Produto produto = produtoDao.buscarPorId(id);
+                            if (produto != null) {
+                                produto.setAtivo(false);
+                                produtoDao.atualizar(produto);
+                                
+                                JOptionPane.showMessageDialog(this, "Produto desativado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                                limparFormulario();
+                                carregarProdutos();
+                            }
+                        }
+                        return; // Sair do método sem tentar excluir
+                    }
+                }
+                
+                // Se não estiver em uso, pode excluir normalmente
                 produtoDao.remover(id);
                 
                 JOptionPane.showMessageDialog(this, "Produto excluído com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
@@ -373,7 +402,6 @@ public class TelaProduto extends JInternalFrame {
     }
     
     private void limparFormulario() {
-        txtId.setText("");
         txtNome.setText("");
         txtCodigo.setText("");
         txtDescricao.setText("");
@@ -496,13 +524,8 @@ public class TelaProduto extends JInternalFrame {
     private Produto criarProdutoDoFormulario() {
         Produto produto = new Produto();
         
-        if (!txtId.getText().trim().isEmpty()) {
-            try {
-                produto.setId(Integer.parseInt(txtId.getText()));
-            } catch (NumberFormatException e) {
-                // Ignorar erro, será tratado como novo produto
-            }
-        }
+        // ID não é mais necessário no formulário
+        // O sistema tratará como novo produto ou atualização baseada no produtoSelecionado
         
         produto.setNome(txtNome.getText().trim());
         produto.setCodigo(txtCodigo.getText().trim());
@@ -526,7 +549,6 @@ public class TelaProduto extends JInternalFrame {
     }
     
     private void preencherFormulario(Produto produto) {
-        txtId.setText(produto.getId() != null ? produto.getId().toString() : "");
         txtNome.setText(produto.getNome());
         txtCodigo.setText(produto.getCodigo());
         txtDescricao.setText(produto.getDescricao());

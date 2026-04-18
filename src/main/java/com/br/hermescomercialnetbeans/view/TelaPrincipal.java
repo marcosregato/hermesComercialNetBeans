@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import com.br.hermescomercialnetbeans.model.Usuario;
+import com.br.hermescomercialnetbeans.dao.MovimentoCaixaDao;
 
 public class TelaPrincipal extends javax.swing.JFrame {
 
@@ -195,6 +196,25 @@ public class TelaPrincipal extends javax.swing.JFrame {
         lblDataHora.setFont(new Font("Segoe UI", Font.ITALIC, 12));
         lblDataHora.setForeground(Color.DARK_GRAY);
         
+        // Status do caixa
+        JLabel lblStatusCaixa = new JLabel();
+        try {
+            MovimentoCaixaDao movimentoDao = new MovimentoCaixaDao();
+            int caixasAbertos = movimentoDao.buscarMovimentosAbertos().size();
+            
+            if (caixasAbertos > 0) {
+                lblStatusCaixa.setText("Caixas Abertos: " + caixasAbertos);
+                lblStatusCaixa.setForeground(new Color(46, 204, 113)); // Verde
+            } else {
+                lblStatusCaixa.setText("Nenhum Caixa Aberto");
+                lblStatusCaixa.setForeground(new Color(231, 76, 60)); // Vermelho
+            }
+        } catch (Exception e) {
+            lblStatusCaixa.setText("Status Caixa: Indisponível");
+            lblStatusCaixa.setForeground(Color.GRAY);
+        }
+        lblStatusCaixa.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
         // Painel esquerdo
         JPanel painelEsquerdo = new JPanel(new FlowLayout(FlowLayout.LEFT));
         painelEsquerdo.setBackground(Color.WHITE);
@@ -205,6 +225,8 @@ public class TelaPrincipal extends javax.swing.JFrame {
         // Painel direito
         JPanel painelDireito = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         painelDireito.setBackground(Color.WHITE);
+        painelDireito.add(lblStatusCaixa);
+        painelDireito.add(Box.createHorizontalStrut(15));
         painelDireito.add(lblDataHora);
         
         painel.add(painelEsquerdo, BorderLayout.CENTER);

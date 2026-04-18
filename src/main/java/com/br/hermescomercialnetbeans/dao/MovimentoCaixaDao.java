@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 
 public class MovimentoCaixaDao {
 
@@ -23,6 +24,10 @@ public class MovimentoCaixaDao {
         
         String dataHoraStr = rs.getString("data_hora");
         if (dataHoraStr != null && !dataHoraStr.isEmpty()) {
+            // PostgreSQL retorna timestamp com microssegundos, remover para parsing
+            if (dataHoraStr.length() > 19) {
+                dataHoraStr = dataHoraStr.substring(0, 19); // Remove microssegundos
+            }
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             movimento.setDataHora(LocalDateTime.parse(dataHoraStr, formatter));
         }
@@ -49,7 +54,7 @@ public class MovimentoCaixaDao {
                       "valor, saldo_anterior, saldo_atual, descricao, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(query)) {
-            ps.setString(1, movimento.getDataHora().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            ps.setTimestamp(1, Timestamp.valueOf(movimento.getDataHora()));
             ps.setObject(2, movimento.getUsuarioId());
             ps.setString(3, movimento.getUsuarioNome());
             ps.setString(4, movimento.getTipoMovimento() != null ? movimento.getTipoMovimento().name() : null);

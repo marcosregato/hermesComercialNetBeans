@@ -344,6 +344,7 @@ public class TelaVendaNova extends JInternalFrame {
             @Override
             public void keyReleased(KeyEvent e) {
                 calcularTotais();
+                calcularTroco();
             }
         });
         
@@ -393,20 +394,30 @@ public class TelaVendaNova extends JInternalFrame {
     
     private void pesquisarProdutoPorCodigo() {
         String codigo = txtCodigoBarras.getText().trim();
-        if (codigo.isEmpty()) return;
+        logger.info("Pesquisando produto com código: '" + codigo + "'");
+        
+        if (codigo.isEmpty()) {
+            logger.info("Código vazio, retornando");
+            return;
+        }
         
         try {
+            logger.info("Chamando produtoDao.buscarPorCodigo(" + codigo + ")");
             Produto produto = produtoDao.buscarPorCodigo(codigo);
+            logger.info("Resultado da busca: " + (produto != null ? "ENCONTRADO - " + produto.getNome() : "NÃO ENCONTRADO"));
+            
             if (produto != null) {
                 txtDescricaoProduto.setText(produto.getNome());
                 txtValorUnitario.setText(produto.getPreco() != null ? 
                     String.format("%.2f", produto.getPreco()) : "0,00");
                 txtQuantidade.requestFocus();
                 txtQuantidade.selectAll();
+                logger.info("Produto encontrado e campos preenchidos");
             } else {
                 JOptionPane.showMessageDialog(this, "Produto não encontrado!", "Aviso", JOptionPane.WARNING_MESSAGE);
                 txtCodigoBarras.requestFocus();
                 txtCodigoBarras.selectAll();
+                logger.info("Produto não encontrado, mensagem exibida");
             }
         } catch (Exception e) {
             logger.error("Erro ao pesquisar produto: " + e.getMessage(), e);
@@ -492,31 +503,41 @@ public class TelaVendaNova extends JInternalFrame {
         
         BigDecimal desconto = BigDecimal.ZERO;
         try {
-            String descontoStr = txtDesconto.getText().trim();
-            if (!descontoStr.isEmpty()) {
-                desconto = new BigDecimal(descontoStr.replace(",", "."));
+            String descontoStr = txtDesconto.getText().trim().replace(",", ".");
+            if (!descontoStr.isEmpty() && !descontoStr.equals("0.00")) {
+                desconto = new BigDecimal(descontoStr);
+                // Não permitir desconto maior que subtotal
+                if (desconto.compareTo(subtotal) > 0) {
+                    desconto = BigDecimal.ZERO;
+                    txtDesconto.setText("0,00");
+                    JOptionPane.showMessageDialog(this, "Desconto não pode ser maior que subtotal!", "Aviso", JOptionPane.WARNING_MESSAGE);
+                }
             }
         } catch (NumberFormatException e) {
             desconto = BigDecimal.ZERO;
+            txtDesconto.setText("0,00");
         }
         
         total = subtotal.subtract(desconto);
         
-        lblSubtotal.setText("Subtotal: R$ " + String.format("%.2f", subtotal));
-        lblDesconto.setText("Desconto: R$ " + String.format("%.2f", desconto));
-        lblTotal.setText("TOTAL: R$ " + String.format("%.2f", total));
-        
-        calcularTroco();
+        // Formatação brasileira
+        lblSubtotal.setText(String.format("Subtotal: R$ %,.2f", subtotal));
+        lblDesconto.setText(String.format("Desconto: R$ %,.2f", desconto));
+        lblTotal.setText(String.format("TOTAL: R$ %,.2f", total));
     }
     
     private void calcularTroco() {
         try {
-            String recebidoStr = txtValorRecebido.getText().trim();
-            if (!recebidoStr.isEmpty()) {
-                BigDecimal valorRecebido = new BigDecimal(recebidoStr.replace(",", "."));
+            String recebidoStr = txtValorRecebido.getText().trim().replace(",", ".");
+            if (!recebidoStr.isEmpty() && !recebidoStr.equals("0.00")) {
+                BigDecimal valorRecebido = new BigDecimal(recebidoStr);
                 BigDecimal troco = valorRecebido.subtract(total);
                 
-                txtTroco.setText(String.format("%.2f", troco.max(BigDecimal.ZERO)));
+                if (troco.compareTo(BigDecimal.ZERO) >= 0) {
+                    txtTroco.setText(String.format("%,.2f", troco));
+                } else {
+                    txtTroco.setText("0,00");
+                }
             } else {
                 txtTroco.setText("0,00");
             }
@@ -532,16 +553,33 @@ public class TelaVendaNova extends JInternalFrame {
         }
         
         try {
-            BigDecimal valorRecebido = new BigDecimal(txtValorRecebido.getText().replace(",", "."));
+            String formaPagamento = (String) comboFormaPagamento.getSelectedItem();
+            BigDecimal valorRecebido = BigDecimal.ZERO;
             
-            if (valorRecebido.compareTo(total) < 0) {
-                JOptionPane.showMessageDialog(this, "Valor recebido insuficiente!", "Aviso", JOptionPane.WARNING_MESSAGE);
-                return;
+            // Para dinheiro, validar valor recebido
+            if ("Dinheiro".equals(formaPagamento)) {
+                String recebidoStr = txtValorRecebido.getText().trim().replace(",", ".");
+                if (recebidoStr.isEmpty() || recebidoStr.equals("0.00")) {
+                    JOptionPane.showMessageDialog(this, "Informe o valor recebido!", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    txtValorRecebido.requestFocus();
+                    return;
+                }
+                valorRecebido = new BigDecimal(recebidoStr);
+                
+                if (valorRecebido.compareTo(total) < 0) {
+                    JOptionPane.showMessageDialog(this, "Valor recebido insuficiente!", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    txtValorRecebido.requestFocus();
+                    return;
+                }
+            } else {
+                // Para outras formas, valor recebido = total
+                valorRecebido = total;
             }
             
             // Salvar venda
             vendaAtual.setValorTotal(total.doubleValue());
-            vendaAtual.setFormaPagamento((String) comboFormaPagamento.getSelectedItem());
+            vendaAtual.setValorFinal(total.doubleValue());
+            vendaAtual.setFormaPagamento(formaPagamento);
             vendaDao.salvar(vendaAtual);
             
             // Salvar itens
@@ -554,13 +592,15 @@ public class TelaVendaNova extends JInternalFrame {
             Pagamento pagamento = new Pagamento();
             pagamento.setVendaId(vendaAtual.getId());
             pagamento.setValor(valorRecebido.doubleValue());
-            String formaPagStr = (String) comboFormaPagamento.getSelectedItem();
-            for (Pagamento.FormaPagamento fp : Pagamento.FormaPagamento.values()) {
-                if (fp.getDescricao().equals(formaPagStr)) {
-                    pagamento.setFormaPagamento(fp);
-                    break;
-                }
+            pagamento.setValorRecebido(valorRecebido.doubleValue());
+            // pagamento.setFormaPagamento(formaPagamento); // Campo string já definido acima
+            
+            // Calcular troco para dinheiro
+            if ("Dinheiro".equals(formaPagamento)) {
+                BigDecimal troco = valorRecebido.subtract(total);
+                pagamento.setTroco(troco.doubleValue());
             }
+            
             pagamentoDao.salvar(pagamento);
             
             JOptionPane.showMessageDialog(this, "Venda finalizada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
@@ -595,9 +635,17 @@ public class TelaVendaNova extends JInternalFrame {
         }
         
         try {
-            EmissorCupomFiscal emissor = new EmissorCupomFiscal();
-            emissor.emitirCupom(vendaAtual, itensVenda);
-            JOptionPane.showMessageDialog(this, "Cupom fiscal emitido com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            String cupom = EmissorCupomFiscal.gerarCupomFiscal(vendaAtual, itensVenda, List.of());
+            
+            // Exibir cupom em dialog
+            JTextArea textArea = new JTextArea(cupom);
+            textArea.setEditable(false);
+            textArea.setFont(new Font("Monospaced", Font.PLAIN, 10));
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            scrollPane.setPreferredSize(new Dimension(400, 600));
+            
+            JOptionPane.showMessageDialog(this, scrollPane, "Cupom Fiscal", JOptionPane.INFORMATION_MESSAGE);
+            logger.info("Cupom fiscal gerado com sucesso para venda #" + vendaAtual.getId());
         } catch (Exception e) {
             logger.error("Erro ao emitir cupom: " + e.getMessage(), e);
             JOptionPane.showMessageDialog(this, "Erro ao emitir cupom: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
