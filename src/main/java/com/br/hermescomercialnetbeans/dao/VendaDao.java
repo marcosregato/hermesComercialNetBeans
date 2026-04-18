@@ -47,11 +47,21 @@ public class VendaDao {
 
    
     public void salvar(Venda venda) {
+        logger.info("Iniciando salvamento da venda: " + (venda.getCodigo() != null ? venda.getCodigo() : "SEM CÓDIGO"));
+        logger.debug("Data/Hora da venda: " + venda.getDataHora());
+        logger.debug("Cliente: " + venda.getClienteNome() + " (ID: " + venda.getClienteId() + ")");
+        logger.debug("Usuário: " + venda.getUsuarioNome() + " (ID: " + venda.getUsuarioId() + ")");
+        logger.debug("Valores - Total: R$ " + venda.getValorTotal() + " | Desconto: R$ " + venda.getValorDesconto() + " | Acréscimo: R$ " + venda.getValorAcrescimo() + " | Final: R$ " + venda.getValorFinal());
+        logger.debug("Status: " + venda.getStatus() + " | Pagamento: " + venda.getTipoPagamento());
+        logger.debug("Venda cancelada: " + venda.isCancelada());
+        
         String query = "INSERT INTO venda (codigo, data_hora, cliente_id, cliente_nome, usuario_id, usuario_nome, " +
                       "valor_total, valor_desconto, valor_acrescimo, valor_final, status, tipo_pagamento, observacoes, cancelada) " +
                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(query)) {
+            logger.debug("Executando query INSERT para venda");
+
             ps.setString(1, venda.getCodigo());
             ps.setString(2, venda.getDataHora().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             ps.setObject(3, venda.getClienteId());
@@ -67,12 +77,17 @@ public class VendaDao {
             ps.setString(13, venda.getObservacoes());
             ps.setBoolean(14, venda.isCancelada());
             
-            ps.executeUpdate();
-            logger.info("Venda salva com sucesso: " + venda.getCodigo());
+            int rowsAffected = ps.executeUpdate();
+            logger.info("Venda salva com sucesso! Código: " + venda.getCodigo() + " | Linhas afetadas: " + rowsAffected);
             
         } catch (SQLException e) {
-            logger.error("Erro ao salvar venda: " + e.getMessage(), e);
+            logger.error("Erro SQL ao salvar venda código " + venda.getCodigo() + ": " + e.getMessage(), e);
+            logger.error("SQL State: " + e.getSQLState());
+            logger.error("Error Code: " + e.getErrorCode());
             throw new RuntimeException("Erro ao salvar venda", e);
+        } catch (Exception e) {
+            logger.error("Erro inesperado ao salvar venda código " + venda.getCodigo() + ": " + e.getMessage(), e);
+            throw new RuntimeException("Erro inesperado ao salvar venda", e);
         }
     }
 

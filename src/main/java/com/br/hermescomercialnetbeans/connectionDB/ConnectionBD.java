@@ -24,7 +24,7 @@ public class ConnectionBD {
     private static final Logger logger = LogManager.getLogger(ConnectionBD.class);
 
     public Connection getConnection(String nomeBanco) {
-        logger.info("Tentando conectar ao banco: " + nomeBanco);
+        logger.info("Iniciando tentativa de conexão com o banco: " + nomeBanco);
         
         try {
             Connection con = null;
@@ -40,30 +40,47 @@ public class ConnectionBD {
             
             if ("Postgres".equals(nomeBanco)) {
                 logger.info("Conectando ao PostgreSQL com URL: " + URL_POSTGRES);
+                logger.debug("Usuário PostgreSQL: " + USER_POSTGRES);
                 con = DriverManager.getConnection(URL_POSTGRES, USER_POSTGRES, SENHA_POSTGRES);
-                logger.info("Conectado com sucesso ao servidor Postgres.");
+                logger.info("Conectado com sucesso ao servidor PostgreSQL.");
+                logger.debug("Conexão PostgreSQL estabelecida: " + (con != null ? "OK" : "FALHOU"));
             } else if ("SQLite".equals(nomeBanco)) {
+                logger.info("Conectando ao SQLite com URL: " + URL_SQLITE);
                 Class.forName("org.sqlite.JDBC");
                 con = DriverManager.getConnection(URL_SQLITE);
                 logger.info("Conectado com sucesso ao servidor SQLite.");
+                logger.debug("Conexão SQLite estabelecida: " + (con != null ? "OK" : "FALHOU"));
             } else if ("MySQL".equals(nomeBanco)) {
+                logger.info("Conectando ao MySQL com URL: " + URL_MYSQL);
+                logger.debug("Usuário MySQL: " + USER_MYSQL);
                 con = DriverManager.getConnection(URL_MYSQL, USER_MYSQL, SENHA_MYSQL);
                 logger.info("Conectado com sucesso ao servidor MySQL.");
+                logger.debug("Conexão MySQL estabelecida: " + (con != null ? "OK" : "FALHOU"));
+            } else {
+                logger.error("Banco de dados não suportado: " + nomeBanco);
+                logger.error("Bancos suportados: Postgres, SQLite, MySQL");
+                return null;
             }
             
             if (con != null) {
                 logger.info("Conexão estabelecida com sucesso para: " + nomeBanco);
+                logger.debug("Validade da conexão: " + (!con.isClosed() ? "ATIVA" : "FECHADA"));
+                logger.debug("Auto-commit: " + con.getAutoCommit());
+            } else {
+                logger.error("Falha ao estabelecer conexão para: " + nomeBanco);
             }
             
             return con;
         } catch (SQLException e) {
-            logger.error("Erro SQL na conexao com o banco de dados: " + nomeBanco, e);
+            logger.error("Erro SQL na conexão com o banco de dados: " + nomeBanco, e);
             logger.error("SQL State: " + e.getSQLState());
             logger.error("Error Code: " + e.getErrorCode());
+            logger.error("Message: " + e.getMessage());
         } catch (ClassNotFoundException e) {
             logger.error("Driver não encontrado para o banco: " + nomeBanco, e);
+            logger.error("Verifique se o driver JDBC está no classpath");
         } catch (Exception e) {
-            logger.error("Erro inesperado na conexao com o banco: " + nomeBanco, e);
+            logger.error("Erro inesperado na conexão com o banco: " + nomeBanco, e);
         }
         
         logger.error("Retornando conexão nula para: " + nomeBanco);

@@ -54,8 +54,16 @@ public class ProdutoDao  {
 
 
 	public void salvar(Produto produto) {
+        logger.info("Iniciando salvamento do produto: " + (produto.getNome() != null ? produto.getNome() : "SEM NOME"));
+        logger.debug("Código do produto: " + produto.getCodigo());
+        logger.debug("Categoria: " + produto.getCategoria() + " | Subcategoria: " + produto.getSubCategoria());
+        logger.debug("Estoque: " + produto.getEstoque() + " | Estoque Mínimo: " + produto.getEstoqueMinimo());
+        logger.debug("Preço: R$ " + produto.getPreco() + " | Preço Compra: R$ " + produto.getPrecoCompra());
+        
         String query ="INSERT INTO produto (nome, categoria, sub_categoria, codigo, marca, data_compra, preco, preco_compra, estoque, estoque_minimo, ativo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
         try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(query)) {
+            logger.debug("Executando query INSERT para produto");
 
 			ps.setString(1, produto.getNome());
 			ps.setString(2, produto.getCategoria());
@@ -70,35 +78,63 @@ public class ProdutoDao  {
 			ps.setInt(10, produto.getEstoqueMinimo());
 			ps.setBoolean(11, produto.getAtivo());
 
-			ps.executeUpdate();
+			int rowsAffected = ps.executeUpdate();
+			logger.info("Produto salvo com sucesso! Linhas afetadas: " + rowsAffected);
 
+		} catch (SQLException e) {
+			logger.error("Erro SQL ao salvar produto: " + e.getMessage(), e);
+			logger.error("SQL State: " + e.getSQLState());
+			logger.error("Error Code: " + e.getErrorCode());
 		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
+			logger.error("Erro inesperado ao salvar produto: " + e.getMessage(), e);
 		}
 
 	}
 
 	public void remover(Integer id) throws SQLException {
+		logger.info("Iniciando remoção do produto ID: " + id);
+		
 		// Verificar se produto está sendo usado em vendas
 		String checkQuery = "SELECT COUNT(*) FROM item_venda WHERE produto_id = ?";
+		logger.debug("Verificando se produto ID " + id + " está sendo usado em vendas");
+		
 		try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(checkQuery)) {
 			ps.setInt(1, id);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next() && rs.getInt(1) > 0) {
-				throw new SQLException("Produto não pode ser excluído pois está registrado em vendas!");
+				int vendasCount = rs.getInt(1);
+				logger.warn("Produto ID " + id + " não pode ser excluído! Está em " + vendasCount + " vendas.");
+				throw new SQLException("Produto não pode ser excluído pois está registrado em " + vendasCount + " vendas!");
 			}
+			logger.debug("Produto ID " + id + " não está sendo usado em vendas. Pode ser excluído.");
+		} catch (SQLException e) {
+			logger.error("Erro ao verificar uso do produto ID " + id + " em vendas: " + e.getMessage(), e);
+			throw e;
 		}
 		
 		// Se não estiver sendo usado, pode excluir
 		String query = "DELETE FROM produto WHERE id=?";
+		logger.debug("Executando DELETE para produto ID: " + id);
+		
 		try (PreparedStatement ps = PostgreSQLConnection.getConnection().prepareStatement(query)) {
 			ps.setInt(1, id);
-			ps.executeUpdate();
-			logger.info("Produto ID " + id + " excluído com sucesso");
-		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
+			int rowsAffected = ps.executeUpdate();
+			logger.info("Produto ID " + id + " excluído com sucesso! Linhas afetadas: " + rowsAffected);
+			
+			if (rowsAffected == 0) {
+				logger.warn("Nenhuma linha afetada ao excluir produto ID " + id + ". Produto pode não existir.");
+			}
+			
+		} catch (SQLException e) {
+			logger.error("Erro SQL ao excluir produto ID " + id + ": " + e.getMessage(), e);
+			logger.error("SQL State: " + e.getSQLState());
+			logger.error("Error Code: " + e.getErrorCode());
 			throw e;
+		} catch (Exception e) {
+			logger.error("Erro inesperado ao excluir produto ID " + id + ": " + e.getMessage(), e);
+			throw new SQLException("Erro inesperado ao excluir produto", e);
 		}
+
 	}
 
 	public void atualizar(Produto produto) {

@@ -232,90 +232,88 @@ public class TelaLogin extends JDialog {
         
         txtSenha.addKeyListener(new KeyListener() {
             @Override
-            public void keyTyped(KeyEvent e) {}
             
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    autenticar();
-                }
+        @Override
+        public void keyPressed(KeyEvent e) {
+            if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                autenticar();
             }
+        }
             
-            @Override
-            public void keyReleased(KeyEvent e) {}
-        });
+        @Override
+        public void keyReleased(KeyEvent e) {}
+    });
         
-        // Foco inicial
+    // Foco inicial
+    txtLogin.requestFocus();
+}
+    
+private void aplicarTema() {
+    // Aplicar Look and Feel moderno se disponível
+    try {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        SwingUtilities.updateComponentTreeUI(this);
+    } catch (Exception e) {
+        logger.warn("Não foi possível aplicar o Look and Feel do sistema: " + e.getMessage());
+    }
+}
+    
+private void autenticar() {
+    String login = txtLogin.getText().trim();
+    String senha = new String(txtSenha.getPassword()).trim();
+        
+    logger.info("Tentativa de autenticação iniciada");
+    logger.debug("Login informado: " + login);
+    logger.debug("Senha informada: " + (senha != null && !senha.isEmpty() ? "***" : "VAZIA"));
+        
+    if (login.isEmpty()) {
+        logger.warn("Tentativa de login com campo de login vazio");
+        mostrarMensagem("Por favor, informe o login.", JOptionPane.WARNING_MESSAGE);
         txtLogin.requestFocus();
+        return;
     }
-    
-    private void aplicarTema() {
-        // Aplicar Look and Feel moderno se disponível
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            SwingUtilities.updateComponentTreeUI(this);
-        } catch (Exception e) {
-            logger.warn("Não foi possível aplicar o Look and Feel do sistema: " + e.getMessage());
-        }
+        
+    if (senha.isEmpty()) {
+        logger.warn("Tentativa de login com campo de senha vazio para usuário: " + login);
+        mostrarMensagem("Por favor, informe a senha.", JOptionPane.WARNING_MESSAGE);
+        txtSenha.requestFocus();
+        return;
     }
-    
-    private void autenticar() {
-        String login = txtLogin.getText().trim();
-        String senha = new String(txtSenha.getPassword()).trim();
         
-        if (login.isEmpty()) {
-            mostrarMensagem("Por favor, informe o login.", JOptionPane.WARNING_MESSAGE);
-            txtLogin.requestFocus();
-            return;
-        }
-        
-        if (senha.isEmpty()) {
-            mostrarMensagem("Por favor, informe a senha.", JOptionPane.WARNING_MESSAGE);
-            txtSenha.requestFocus();
-            return;
-        }
-        
-        try {
-            usuarioAutenticado = usuarioDao.autenticar(login, senha);
+    try {
+        logger.debug("Verificando credenciais no banco de dados para usuário: " + login);
+        usuarioAutenticado = usuarioDao.autenticar(login, senha);
             
-            if (usuarioAutenticado != null) {
-                if (!usuarioAutenticado.getAtivo()) {
-                    mostrarMensagem("Usuário inativo. Entre em contato com o administrador.", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+        if (usuarioAutenticado != null) {
+            logger.info("Usuário encontrado: " + usuarioAutenticado.getNome() + " (ID: " + usuarioAutenticado.getId() + ")");
+            logger.debug("Status do usuário: " + (usuarioAutenticado.getAtivo() ? "ATIVO" : "INATIVO"));
                 
-                logger.info("Usuário autenticado com sucesso: " + usuarioAutenticado.getNome());
+            if (!usuarioAutenticado.getAtivo()) {
+                logger.warn("Tentativa de login com usuário INATIVO: " + login);
+                mostrarMensagem("Usuário inativo. Contate o administrador.", JOptionPane.ERROR_MESSAGE);
+                txtSenha.setText("");
+                txtLogin.requestFocus();
+            } else {
+                logger.info("Autenticação bem-sucedida para usuário: " + usuarioAutenticado.getNome());
                 mostrarMensagem("Bem-vindo, " + usuarioAutenticado.getNome() + "!", JOptionPane.INFORMATION_MESSAGE);
-                
+                    
                 // Abrir tela principal
                 TelaPrincipal telaPrincipal = new TelaPrincipal(usuarioAutenticado);
                 telaPrincipal.setVisible(true);
-                
+                    
                 dispose();
-            } else {
-                mostrarMensagem("Login ou senha inválidos.", JOptionPane.ERROR_MESSAGE);
-                txtSenha.setText("");
-                txtLogin.requestFocus();
             }
-            
-        } catch (Exception e) {
-            logger.error("Erro ao autenticar usuário: " + e.getMessage(), e);
-            mostrarMensagem("Erro ao autenticar. Tente novamente.", JOptionPane.ERROR_MESSAGE);
+        } else {
+            logger.warn("Falha na autenticação - usuário ou senha inválidos: " + login);
+            mostrarMensagem("Login ou senha inválidos.", JOptionPane.ERROR_MESSAGE);
+            txtSenha.setText("");
+            txtLogin.requestFocus();
         }
+            
+    } catch (Exception e) {
+        logger.error("Erro ao autenticar usuário '" + login + "': " + e.getMessage(), e);
+        mostrarMensagem("Erro ao autenticar. Tente novamente.", JOptionPane.ERROR_MESSAGE);
     }
-    
-    private void mostrarConfiguracoes() {
-        JOptionPane.showMessageDialog(this, 
-            "Configurações do Banco de Dados:\n\n" +
-            "PostgreSQL: localhost:5432/hermes_pdv\n" +
-            "MySQL: localhost:3306/hermes_pdv\n" +
-            "SQLite: hermes_pdv.db\n\n" +
-            "Verifique o arquivo config.properties", 
-            "Configurações", 
-            JOptionPane.INFORMATION_MESSAGE);
-    }
-    
-    private void mostrarMensagem(String mensagem, int tipo) {
         JOptionPane.showMessageDialog(this, mensagem, "Login", tipo);
     }
     
