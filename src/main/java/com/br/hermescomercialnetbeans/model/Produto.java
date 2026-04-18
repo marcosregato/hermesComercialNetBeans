@@ -4,6 +4,8 @@
  */
 package com.br.hermescomercialnetbeans.model;
 
+import java.math.BigDecimal;
+
 /**
  *
  * @author marcos
@@ -16,8 +18,25 @@ public class Produto  {
     private String codigo;
     private String marca;
     private String dataCompra;
+    private Integer id;
+    private BigDecimal preco;
+    private BigDecimal precoCompra;
+    private Integer estoque;
+    private Integer estoqueMinimo;
+    private Boolean ativo;
     
+    public Produto() {
+        this.estoque = 0;
+        this.estoqueMinimo = 0;
+        this.ativo = true;
+    }
     
+	public Integer getId() {
+		return id;
+	}
+	public void setId(Integer id) {
+		this.id = id;
+	}
 	public String getNome() {
 		return nome;
 	}
@@ -54,10 +73,68 @@ public class Produto  {
 	public void setDataCompra(String dataCompra) {
 		this.dataCompra = dataCompra;
 	}
+	public BigDecimal getPreco() {
+		return preco;
+	}
+	public void setPreco(BigDecimal preco) {
+		this.preco = preco;
+	}
+	public BigDecimal getPrecoCompra() {
+		return precoCompra;
+	}
+	public void setPrecoCompra(BigDecimal precoCompra) {
+		this.precoCompra = precoCompra;
+	}
+	public Integer getEstoque() {
+		return estoque;
+	}
+	public void setEstoque(Integer estoque) {
+		this.estoque = estoque;
+	}
+	public Integer getEstoqueMinimo() {
+		return estoqueMinimo;
+	}
+	public void setEstoqueMinimo(Integer estoqueMinimo) {
+		this.estoqueMinimo = estoqueMinimo;
+	}
+	public Boolean getAtivo() {
+		return ativo;
+	}
+	public void setAtivo(Boolean ativo) {
+		this.ativo = ativo;
+	}
 
-    
-    
+	public String getDescricao() {
+		return nome; // Retorna o nome como descrição para compatibilidade
+	}
 	
-	
-	
+	public void setDescricao(String descricao) {
+		this.nome = descricao; // Define o nome como descrição para compatibilidade
+	}
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Produto produto = (Produto) obj;
+        return id != null && id.equals(produto.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "Produto{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                ", codigo='" + codigo + '\'' +
+                ", preco=" + preco +
+                ", estoque=" + estoque +
+                ", categoria='" + categoria + '\'' +
+                ", ativo=" + ativo +
+                '}';
+    }
 }

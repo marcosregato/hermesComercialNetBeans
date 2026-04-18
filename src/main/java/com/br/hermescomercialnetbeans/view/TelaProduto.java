@@ -1,496 +1,559 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.br.hermescomercialnetbeans.view;
 
-import com.br.hermescomercialnetbeans.controller.ProdutoController;
 import com.br.hermescomercialnetbeans.dao.ProdutoDao;
 import com.br.hermescomercialnetbeans.model.Produto;
-import java.util.List;
+import org.apache.logging.log4j.LogManager;
+
+import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
- *
+ * Tela elegante para gerenciamento de Produtos
  * @author marcos
  */
-public class TelaProduto extends javax.swing.JInternalFrame {
-
-    /**
-     * Creates new form TelaProduto
-     */
+public class TelaProduto extends JInternalFrame {
+    
+    private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(TelaProduto.class);
+    
+    // Componentes da interface
+    private JPanel panelPrincipal;
+    private JPanel panelFormulario;
+    private JPanel panelBotoes;
+    private JPanel panelPesquisa;
+    private JScrollPane scrollPaneTabela;
+    private JTable tabelaProdutos;
+    
+    // Campos do formulário
+    private JTextField txtId;
+    private JTextField txtNome;
+    private JTextField txtCodigo;
+    private JTextField txtDescricao;
+    private JTextField txtPrecoCompra;
+    private JTextField txtPrecoVenda;
+    private JTextField txtEstoque;
+    private JTextField txtEstoqueMinimo;
+    private JTextField txtFornecedor;
+    private JCheckBox chkAtivo;
+    
+    // Botões
+    private JButton btNovo;
+    private JButton btSalvar;
+    private JButton btEditar;
+    private JButton btExcluir;
+    private JButton btCancelar;
+    private JButton btLimpar;
+    private JButton btPesquisar;
+    
+    // Pesquisa
+    private JTextField txtPesquisa;
+    private JComboBox<String> comboFiltro;
+    
+    // DAO e modelo
+    private ProdutoDao produtoDao;
+    private DefaultTableModel modeloTabela;
+    private Produto produtoSelecionado;
+    
+    // Cores do tema
+    private static final Color COR_PRIMARIA = new Color(41, 128, 185);
+    private static final Color COR_SECUNDARIA = new Color(52, 73, 94);
+    private static final Color COR_SUCESSO = new Color(39, 174, 96);
+    private static final Color COR_PERIGO = new Color(231, 76, 60);
+    private static final Color COR_FUNDO = new Color(236, 240, 241);
+    private static final Color COR_TEXTO = new Color(44, 62, 80);
+    
     public TelaProduto() {
-        initComponents();
-        listar();
-        comboTamanho.setSelectedIndex(-1);
+        super("Cadastro de Produtos");
+        this.produtoDao = new ProdutoDao();
+        inicializarComponentes();
+        configurarLayout();
+        configurarEventos();
+        carregarProdutos();
     }
     
-    ProdutoController controller = new ProdutoController();
-    Produto produto = new Produto();
+    private void inicializarComponentes() {
+        // Painéis principais
+        panelPrincipal = new JPanel(new BorderLayout());
+        panelFormulario = new JPanel(new GridBagLayout());
+        panelBotoes = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        panelPesquisa = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        
+        // Campos do formulário
+        txtId = new JTextField(10);
+        txtId.setEditable(false);
+        txtId.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        
+        txtNome = new JTextField(30);
+        txtNome.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtCodigo = new JTextField(15);
+        txtCodigo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtDescricao = new JTextField(40);
+        txtDescricao.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtPrecoCompra = new JTextField(15);
+        txtPrecoCompra.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtPrecoVenda = new JTextField(15);
+        txtPrecoVenda.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtEstoque = new JTextField(10);
+        txtEstoque.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtEstoqueMinimo = new JTextField(10);
+        txtEstoqueMinimo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtFornecedor = new JTextField(20);
+        txtFornecedor.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        
+        chkAtivo = new JCheckBox("Ativo");
+        chkAtivo.setSelected(true);
+        chkAtivo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        chkAtivo.setOpaque(false);
+        
+        // Botões
+        btNovo = criarBotao("Novo", COR_SUCESSO);
+        btSalvar = criarBotao("Salvar", COR_PRIMARIA);
+        btEditar = criarBotao("Editar", COR_SECUNDARIA);
+        btExcluir = criarBotao("Excluir", COR_PERIGO);
+        btCancelar = criarBotao("Cancelar", Color.GRAY);
+        btLimpar = criarBotao("Limpar", Color.ORANGE);
+        btPesquisar = criarBotao("Pesquisar", COR_PRIMARIA);
+        
+        // Pesquisa
+        txtPesquisa = new JTextField(20);
+        txtPesquisa.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        comboFiltro = new JComboBox<>(new String[]{"Todos", "Nome", "Código", "Descrição"});
+        comboFiltro.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        
+        // Tabela
+        modeloTabela = new DefaultTableModel();
+        modeloTabela.addColumn("ID");
+        modeloTabela.addColumn("Código");
+        modeloTabela.addColumn("Nome");
+        modeloTabela.addColumn("Descrição");
+        modeloTabela.addColumn("Preço Venda");
+        modeloTabela.addColumn("Estoque");
+        modeloTabela.addColumn("Status");
+        
+        tabelaProdutos = new JTable(modeloTabela);
+        tabelaProdutos.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tabelaProdutos.setRowHeight(25);
+        tabelaProdutos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tabelaProdutos.getTableHeader().setBackground(COR_PRIMARIA);
+        tabelaProdutos.getTableHeader().setForeground(Color.WHITE);
+        
+        scrollPaneTabela = new JScrollPane(tabelaProdutos);
+        scrollPaneTabela.setBorder(BorderFactory.createLineBorder(COR_PRIMARIA, 1));
+    }
     
+    private void configurarLayout() {
+        // Configurar painel de pesquisa
+        panelPesquisa.add(new JLabel("Pesquisar:"));
+        panelPesquisa.add(txtPesquisa);
+        panelPesquisa.add(new JLabel("Filtrar por:"));
+        panelPesquisa.add(comboFiltro);
+        panelPesquisa.add(btPesquisar);
+        panelPesquisa.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panelPesquisa.setBackground(Color.WHITE);
+        
+        // Configurar painel do formulário
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Linha 1: ID e Nome
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.weightx = 0;
+        panelFormulario.add(new JLabel("ID:"), gbc);
+        gbc.gridx = 1;
+        panelFormulario.add(txtId, gbc);
+        gbc.gridx = 2;
+        panelFormulario.add(new JLabel("Nome:"), gbc);
+        gbc.gridx = 3;
+        gbc.weightx = 1.0;
+        panelFormulario.add(txtNome, gbc);
+        
+        // Linha 2: Código e Descrição
+        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.weightx = 0;
+        panelFormulario.add(new JLabel("Código:"), gbc);
+        gbc.gridx = 1;
+        panelFormulario.add(txtCodigo, gbc);
+        gbc.gridx = 2;
+        panelFormulario.add(new JLabel("Descrição:"), gbc);
+        gbc.gridx = 3;
+        gbc.weightx = 1.0;
+        gbc.gridwidth = 2;
+        panelFormulario.add(txtDescricao, gbc);
+        
+        // Linha 3: Preços
+        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.weightx = 0;
+        gbc.gridwidth = 1;
+        panelFormulario.add(new JLabel("Preço Compra:"), gbc);
+        gbc.gridx = 1;
+        panelFormulario.add(txtPrecoCompra, gbc);
+        gbc.gridx = 2;
+        panelFormulario.add(new JLabel("Preço Venda:"), gbc);
+        gbc.gridx = 3;
+        panelFormulario.add(txtPrecoVenda, gbc);
+        
+        // Linha 4: Estoque
+        gbc.gridx = 0; gbc.gridy = 3;
+        panelFormulario.add(new JLabel("Estoque:"), gbc);
+        gbc.gridx = 1;
+        panelFormulario.add(txtEstoque, gbc);
+        gbc.gridx = 2;
+        panelFormulario.add(new JLabel("Estoque Mínimo:"), gbc);
+        gbc.gridx = 3;
+        panelFormulario.add(txtEstoqueMinimo, gbc);
+        
+        // Linha 5: Fornecedor e Ativo
+        gbc.gridx = 0; gbc.gridy = 4;
+        panelFormulario.add(new JLabel("Fornecedor:"), gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        panelFormulario.add(txtFornecedor, gbc);
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        panelFormulario.add(chkAtivo, gbc);
+        
+        // Configurar painel de botões
+        panelBotoes.add(btNovo);
+        panelBotoes.add(btSalvar);
+        panelBotoes.add(btEditar);
+        panelBotoes.add(btExcluir);
+        panelBotoes.add(btCancelar);
+        panelBotoes.add(btLimpar);
+        panelBotoes.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        panelBotoes.setBackground(Color.WHITE);
+        
+        // Painel do formulário completo
+        JPanel panelFormCompleto = new JPanel(new BorderLayout());
+        panelFormCompleto.add(panelFormulario, BorderLayout.CENTER);
+        panelFormCompleto.add(panelBotoes, BorderLayout.SOUTH);
+        panelFormCompleto.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(COR_PRIMARIA, 1),
+            "Dados do Produto",
+            0, 0, new Font("Segoe UI", Font.BOLD, 12), COR_PRIMARIA
+        ));
+        panelFormCompleto.setBackground(Color.WHITE);
+        
+        // Dividir a tela
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        splitPane.setTopComponent(panelFormCompleto);
+        splitPane.setBottomComponent(scrollPaneTabela);
+        splitPane.setDividerLocation(250);
+        
+        // Adicionar tudo ao painel principal
+        panelPrincipal.add(panelPesquisa, BorderLayout.NORTH);
+        panelPrincipal.add(splitPane, BorderLayout.CENTER);
+        
+        // Configurar o frame
+        this.setContentPane(panelPrincipal);
+        this.setSize(900, 600);
+        this.setClosable(true);
+        this.setMaximizable(true);
+        this.setIconifiable(true);
+        this.setResizable(true);
+    }
     
-     private void pegaValoresDosCampos(Produto produto) {
-         
-          try {
-              produto.setCodigo(Integer.valueOf(txtCodigo.getText()));
-              produto.setEstampa(txtEstampa.getText());
-              produto.setQuantidade(Integer.valueOf(txtQuantidade.getText()));
-              produto.setTamanho(comboTamanho.getSelectedItem().toString());
-              produto.setEstilo(txtEstilo.getText());
-              produto.setModelo(txtModelo.getText());
-              produto.setCor(txtCor.getText());
-        produto.setDescricao(txtDescricao.getText());
+    private void configurarEventos() {
+        // Eventos dos botões
+        btNovo.addActionListener(e -> novoProduto());
+        btSalvar.addActionListener(e -> salvarProduto());
+        btEditar.addActionListener(e -> editarProduto());
+        btExcluir.addActionListener(e -> excluirProduto());
+        btCancelar.addActionListener(e -> cancelarEdicao());
+        btLimpar.addActionListener(e -> limparFormulario());
+        btPesquisar.addActionListener(e -> pesquisarProdutos());
+        
+        // Evento da tabela
+        tabelaProdutos.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    selecionarProdutoDaTabela();
+                }
+            }
+        });
+        
+        // Evento de pesquisa em tempo real
+        txtPesquisa.addActionListener(e -> pesquisarProdutos());
+    }
+    
+    private void novoProduto() {
+        limparFormulario();
+        produtoSelecionado = null;
+        txtNome.requestFocus();
+    }
+    
+    private void salvarProduto() {
+        try {
+            if (!validarFormulario()) {
+                return;
+            }
+            
+            Produto produto = criarProdutoDoFormulario();
+            
+            if (produto.getId() == null || produto.getId() == 0) {
+                // Novo produto
+                produtoDao.salvar(produto);
+                JOptionPane.showMessageDialog(this, "Produto salvo com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                // Atualização
+                produtoDao.atualizar(produto);
+                JOptionPane.showMessageDialog(this, "Produto atualizado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            }
+            
+            limparFormulario();
+            carregarProdutos();
             
         } catch (Exception e) {
-            System.err.println("ERRO >> "+ e.getMessage());
+            logger.error("Erro ao salvar produto: " + e.getMessage(), e);
+            JOptionPane.showMessageDialog(this, "Erro ao salvar produto: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
         }
-     
     }
     
-    public void limpar() {
+    private void editarProduto() {
+        int linhaSelecionada = tabelaProdutos.getSelectedRow();
+        if (linhaSelecionada == -1) {
+            JOptionPane.showMessageDialog(this, "Selecione um produto para editar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         
         try {
-            txtCodigo.setText("");
-            txtEstampa.setText("");
-            txtQuantidade.setText("");
-            comboTamanho.setSelectedIndex(-1);
-            txtEstilo.setText("");
-            txtModelo.setText("");
-            txtCor.setText("");
-            txtDescricao.setText("");
+            Integer id = (Integer) modeloTabela.getValueAt(linhaSelecionada, 0);
+            Produto produto = produtoDao.buscarPorId(id);
+            
+            if (produto != null) {
+                preencherFormulario(produto);
+                produtoSelecionado = produto;
+            }
+            
         } catch (Exception e) {
-            System.err.println("ERRO >> "+ e.getMessage());
+            logger.error("Erro ao carregar produto: " + e.getMessage(), e);
+            JOptionPane.showMessageDialog(this, "Erro ao carregar produto: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
     
-     public void listar(){
-         try {
-             ProdutoDao dao = new ProdutoDao();
-        
-            DefaultTableModel  model = (DefaultTableModel) tabelaProduto.getModel();
-            model.setRowCount(0);
-             tabelaProduto.setModel(model);
-            List<Produto> lista = dao.listar();
-            Object[] objeto = new Object[8];
-            for (int i = 0; i < lista.size(); i++) {
-                objeto[0] = lista.get(i).getCodigo();
-                objeto[1] = lista.get(i).getEstilo();
-                objeto[2] = lista.get(i).getTamanho();
-                objeto[3] = lista.get(i).getEstampa();
-                objeto[4] = lista.get(i).getCor();
-                objeto[5] = lista.get(i).getModelo();
-                objeto[6] = lista.get(i).getQuantidade();
-                objeto[7] = lista.get(i).getDescricao();
-
-                model.addRow(objeto);
-            }
-            tabelaProduto.setRowHeight(35);
-            tabelaProduto.setRowMargin(10);
-        
-        } catch (Exception e) {
-            System.err.println("ERRO >> "+ e.getMessage());
-        }   
-    }
-     
-        
-
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        jPanel1 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel5 = new javax.swing.JLabel();
-        jLabel7 = new javax.swing.JLabel();
-        jLabel8 = new javax.swing.JLabel();
-        jLabel9 = new javax.swing.JLabel();
-        jLabel10 = new javax.swing.JLabel();
-        jLabel11 = new javax.swing.JLabel();
-        txtCodigo = new javax.swing.JTextField();
-        checkBoxEstampa = new javax.swing.JCheckBox();
-        txtEstampa = new javax.swing.JTextField();
-        txtQuantidade = new javax.swing.JTextField();
-        txtEstilo = new javax.swing.JTextField();
-        comboTamanho = new javax.swing.JComboBox<>();
-        txtModelo = new javax.swing.JTextField();
-        txtDescricao = new javax.swing.JTextField();
-        txtCor = new javax.swing.JTextField();
-        jLabel6 = new javax.swing.JLabel();
-        txtPesqProduto = new javax.swing.JTextField();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        tabelaProduto = new javax.swing.JTable();
-        btSalvar = new javax.swing.JButton();
-        btPesquisar = new javax.swing.JButton();
-        btEditar = new javax.swing.JButton();
-        btExcluir = new javax.swing.JButton();
-        btFechar = new javax.swing.JButton();
-
-        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
-
-        jLabel1.setText("Código :");
-
-        jLabel2.setText("Descrição :");
-
-        jLabel3.setText("Qual estampa ?");
-        jLabel3.setToolTipText("");
-
-        jLabel5.setText("Estampa");
-
-        jLabel7.setText("Cor :");
-
-        jLabel8.setText("Tamanho :");
-
-        jLabel9.setText("Estilo :");
-
-        jLabel10.setText("Modelo :");
-
-        jLabel11.setText("Quantidade");
-
-        checkBoxEstampa.setText("Sim");
-
-        comboTamanho.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "G", "M", "P" }));
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(41, 41, 41)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel8)
-                            .addComponent(jLabel2))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(comboTamanho, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(30, 30, 30)
-                                .addComponent(jLabel9)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(txtEstilo, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jLabel10)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(txtModelo, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(txtDescricao, javax.swing.GroupLayout.PREFERRED_SIZE, 477, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jLabel7)
-                        .addGap(18, 18, 18)
-                        .addComponent(txtCor, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(2, 2, 2)
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel3)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(checkBoxEstampa)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jLabel5)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(txtEstampa, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jLabel11)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(txtQuantidade, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(132, Short.MAX_VALUE))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(27, 27, 27)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
-                    .addComponent(jLabel3)
-                    .addComponent(jLabel5)
-                    .addComponent(jLabel11)
-                    .addComponent(txtCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(checkBoxEstampa)
-                    .addComponent(txtEstampa, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtQuantidade, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel8)
-                    .addComponent(comboTamanho, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel9)
-                    .addComponent(txtEstilo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel10)
-                    .addComponent(txtModelo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel7)
-                    .addComponent(txtCor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtDescricao, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel2))
-                .addContainerGap(31, Short.MAX_VALUE))
-        );
-
-        jLabel6.setText("Pesquisar :");
-
-        tabelaProduto.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-
-            },
-            new String [] {
-                "Código", "Estilo", "Tamanho", "Estampa", "Cor", "Modelo", "Quantidade", "Descrição"
-            }
-        ) {
-            Class[] types = new Class [] {
-                java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
-            };
-            boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false, false, false
-            };
-
-            public Class getColumnClass(int columnIndex) {
-                return types [columnIndex];
-            }
-
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
-                return canEdit [columnIndex];
-            }
-        });
-        tabelaProduto.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                tabelaProdutoMouseClicked(evt);
-            }
-        });
-        jScrollPane1.setViewportView(tabelaProduto);
-        if (tabelaProduto.getColumnModel().getColumnCount() > 0) {
-            tabelaProduto.getColumnModel().getColumn(0).setResizable(false);
-            tabelaProduto.getColumnModel().getColumn(1).setResizable(false);
-            tabelaProduto.getColumnModel().getColumn(2).setResizable(false);
-            tabelaProduto.getColumnModel().getColumn(3).setResizable(false);
-            tabelaProduto.getColumnModel().getColumn(4).setResizable(false);
-            tabelaProduto.getColumnModel().getColumn(5).setResizable(false);
-            tabelaProduto.getColumnModel().getColumn(6).setResizable(false);
-            tabelaProduto.getColumnModel().getColumn(7).setResizable(false);
+    private void excluirProduto() {
+        int linhaSelecionada = tabelaProdutos.getSelectedRow();
+        if (linhaSelecionada == -1) {
+            JOptionPane.showMessageDialog(this, "Selecione um produto para excluir.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
         }
-
-        btSalvar.setText("SALVAR");
-        btSalvar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btSalvarActionPerformed(evt);
-            }
-        });
-
-        btPesquisar.setText("PESQUISAR");
-        btPesquisar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btPesquisarActionPerformed(evt);
-            }
-        });
-
-        btEditar.setText("EDITAR");
-        btEditar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btEditarActionPerformed(evt);
-            }
-        });
-
-        btExcluir.setText("EXCLUIR");
-        btExcluir.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btExcluirActionPerformed(evt);
-            }
-        });
-
-        btFechar.setText("FECHAR");
-        btFechar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btFecharActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(41, 41, 41)
-                        .addComponent(jLabel6)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(txtPesqProduto, javax.swing.GroupLayout.PREFERRED_SIZE, 477, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(btPesquisar)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jScrollPane1)))
-                .addContainerGap())
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addGap(0, 0, Short.MAX_VALUE)
-                .addComponent(btSalvar)
-                .addGap(18, 18, 18)
-                .addComponent(btExcluir)
-                .addGap(18, 18, 18)
-                .addComponent(btEditar)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(btFechar)
-                .addGap(71, 71, 71))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel6)
-                    .addComponent(txtPesqProduto, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btPesquisar))
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(27, 27, 27)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btSalvar)
-                    .addComponent(btEditar)
-                    .addComponent(btExcluir)
-                    .addComponent(btFechar))
-                .addContainerGap(45, Short.MAX_VALUE))
-        );
-
-        pack();
-    }// </editor-fold>//GEN-END:initComponents
-
-    private void btSalvarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btSalvarActionPerformed
-        // TODO add your handling code here:
-        pegaValoresDosCampos(produto);
-        controller.actionBtSalvar(produto);
-        limpar();
-        listar();
-    }//GEN-LAST:event_btSalvarActionPerformed
-
-    private void btFecharActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btFecharActionPerformed
-        // TODO add your handling code here:
-        dispose();
-    }//GEN-LAST:event_btFecharActionPerformed
-
-    private void btPesquisarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btPesquisarActionPerformed
-        // TODO add your handling code here:
         
-       
-         try {
-             ProdutoDao dao = new ProdutoDao();
-        
-            DefaultTableModel  model = (DefaultTableModel) tabelaProduto.getModel();
-            model.setRowCount(0);
-             tabelaProduto.setModel(model);
-            List<Produto> lista = dao.buscar(txtPesqProduto.getText());
-            Object[] objeto = new Object[8];
-            for (int i = 0; i < lista.size(); i++) {
-                objeto[0] = lista.get(i).getCodigo();
-                objeto[1] = lista.get(i).getEstilo();
-                objeto[2] = lista.get(i).getTamanho();
-                objeto[3] = lista.get(i).getEstampa();
-                objeto[4] = lista.get(i).getCor();
-                objeto[5] = lista.get(i).getModelo();
-                objeto[6] = lista.get(i).getQuantidade();
-                objeto[7] = lista.get(i).getDescricao();
-
-                model.addRow(objeto);
-            }
-            tabelaProduto.setRowHeight(35);
-            tabelaProduto.setRowMargin(10);
-        
-        } catch (Exception e) {
-            System.err.println("ERRO >> "+ e.getMessage());
-           
-    }
-    }//GEN-LAST:event_btPesquisarActionPerformed
-
-    private void btExcluirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btExcluirActionPerformed
-        // TODO add your handling code here:
-         DefaultTableModel  model = (DefaultTableModel) tabelaProduto.getModel();
-         int row = tabelaProduto.getSelectedRow();
-         
-         //System.out.println(tabelaProduto.getValueAt(row, 0));
-         
-         controller.actionBtExcluir(Integer.valueOf(tabelaProduto.getValueAt(row, 0).toString().trim()));
-         listar();
-         limpar();
-         
-         
-    }//GEN-LAST:event_btExcluirActionPerformed
-
-    private void btEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEditarActionPerformed
-        // TODO add your handling code here:
-        
-        pegaValoresDosCampos(produto);
-        controller.actionBtEditar(produto);
-        limpar();
-        listar();
-    }//GEN-LAST:event_btEditarActionPerformed
-
-    private void tabelaProdutoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tabelaProdutoMouseClicked
-        // TODO add your handling code here:
-         int linhaTabela = tabelaProduto.getSelectedRow();
-        DefaultTableModel  model = (DefaultTableModel) tabelaProduto.getModel();
-        txtCodigo.setText(model.getValueAt(linhaTabela, 0).toString());
-        txtEstilo.setText(model.getValueAt(linhaTabela, 1).toString());
-        String valorCombo = model.getValueAt(linhaTabela, 2).toString();
-        
-        txtCodigo.setEditable(false);
-        
-        for(int x=0; x < comboTamanho.getItemCount(); x++){
-            if(comboTamanho.getItemAt(x).toString().equalsIgnoreCase(valorCombo)){
-                comboTamanho.setSelectedIndex(x);
+        int confirmacao = JOptionPane.showConfirmDialog(this, 
+            "Tem certeza que deseja excluir este produto?", 
+            "Confirmar Exclusão", 
+            JOptionPane.YES_NO_OPTION);
+            
+        if (confirmacao == JOptionPane.YES_OPTION) {
+            try {
+                Integer id = (Integer) modeloTabela.getValueAt(linhaSelecionada, 0);
+                produtoDao.remover(id);
                 
+                JOptionPane.showMessageDialog(this, "Produto excluído com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                limparFormulario();
+                carregarProdutos();
+                
+            } catch (Exception e) {
+                logger.error("Erro ao excluir produto: " + e.getMessage(), e);
+                JOptionPane.showMessageDialog(this, "Erro ao excluir produto: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    private void cancelarEdicao() {
+        limparFormulario();
+        produtoSelecionado = null;
+    }
+    
+    private void limparFormulario() {
+        txtId.setText("");
+        txtNome.setText("");
+        txtCodigo.setText("");
+        txtDescricao.setText("");
+        txtPrecoCompra.setText("");
+        txtPrecoVenda.setText("");
+        txtEstoque.setText("");
+        txtEstoqueMinimo.setText("");
+        txtFornecedor.setText("");
+        chkAtivo.setSelected(true);
+        
+        txtNome.requestFocus();
+    }
+    
+    private void pesquisarProdutos() {
+        try {
+            List<Produto> produtos;
+            String textoPesquisa = txtPesquisa.getText().trim();
+            String filtro = (String) comboFiltro.getSelectedItem();
+            
+            if (textoPesquisa.isEmpty()) {
+                produtos = produtoDao.listar();
+            } else {
+                produtos = produtoDao.listar(); // Implementar método de pesquisa específico
+                
+                // Filtrar localmente (implementar pesquisa no DAO seria melhor)
+                String filtroLower = textoPesquisa.toLowerCase();
+                produtos = produtos.stream()
+                    .filter(p -> {
+                        switch (filtro) {
+                            case "Nome":
+                                return p.getNome().toLowerCase().contains(filtroLower);
+                            case "Código":
+                                return p.getCodigo().toLowerCase().contains(filtroLower);
+                            case "Descrição":
+                                return p.getDescricao().toLowerCase().contains(filtroLower);
+                            default:
+                                return p.getNome().toLowerCase().contains(filtroLower) ||
+                                       p.getCodigo().toLowerCase().contains(filtroLower) ||
+                                       p.getDescricao().toLowerCase().contains(filtroLower);
+                        }
+                    })
+                    .toList();
+            }
+            
+            atualizarTabela(produtos);
+            
+        } catch (Exception e) {
+            logger.error("Erro ao pesquisar produtos: " + e.getMessage(), e);
+            JOptionPane.showMessageDialog(this, "Erro ao pesquisar produtos: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private void selecionarProdutoDaTabela() {
+        editarProduto();
+    }
+    
+    private void carregarProdutos() {
+        try {
+            List<Produto> produtos = produtoDao.listar();
+            atualizarTabela(produtos);
+        } catch (Exception e) {
+            logger.error("Erro ao carregar produtos: " + e.getMessage(), e);
+            JOptionPane.showMessageDialog(this, "Erro ao carregar produtos: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private void atualizarTabela(List<Produto> produtos) {
+        modeloTabela.setRowCount(0);
+        
+        for (Produto produto : produtos) {
+            Object[] linha = {
+                produto.getId(),
+                produto.getCodigo(),
+                produto.getNome(),
+                produto.getDescricao(),
+                "R$ " + String.format("%.2f", produto.getPreco()),
+                produto.getEstoque(),
+                produto.getAtivo() ? "Ativo" : "Inativo"
+            };
+            modeloTabela.addRow(linha);
+        }
+    }
+    
+    private boolean validarFormulario() {
+        if (txtNome.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "O nome é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+            txtNome.requestFocus();
+            return false;
+        }
+        
+        if (txtCodigo.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "O código é obrigatório.", "Validação", JOptionPane.WARNING_MESSAGE);
+            txtCodigo.requestFocus();
+            return false;
+        }
+        
+        try {
+            if (!txtPrecoVenda.getText().trim().isEmpty()) {
+                new BigDecimal(txtPrecoVenda.getText().replace(",", "."));
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Preço de venda inválido.", "Validação", JOptionPane.WARNING_MESSAGE);
+            txtPrecoVenda.requestFocus();
+            return false;
+        }
+        
+        try {
+            if (!txtEstoque.getText().trim().isEmpty()) {
+                Integer.parseInt(txtEstoque.getText());
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Estoque inválido.", "Validação", JOptionPane.WARNING_MESSAGE);
+            txtEstoque.requestFocus();
+            return false;
+        }
+        
+        return true;
+    }
+    
+    private Produto criarProdutoDoFormulario() {
+        Produto produto = new Produto();
+        
+        if (!txtId.getText().trim().isEmpty()) {
+            try {
+                produto.setId(Integer.parseInt(txtId.getText()));
+            } catch (NumberFormatException e) {
+                // Ignorar erro, será tratado como novo produto
             }
         }
         
-        txtEstampa.setText(model.getValueAt(linhaTabela, 3).toString());
-        txtCor.setText(model.getValueAt(linhaTabela, 4).toString());
-        txtModelo.setText(model.getValueAt(linhaTabela, 5).toString());
-        txtQuantidade.setText(model.getValueAt(linhaTabela, 6).toString());
-        txtDescricao.setText(model.getValueAt(linhaTabela, 7).toString());
+        produto.setNome(txtNome.getText().trim());
+        produto.setCodigo(txtCodigo.getText().trim());
+        produto.setDescricao(txtDescricao.getText().trim());
         
-    }//GEN-LAST:event_tabelaProdutoMouseClicked
-
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btEditar;
-    private javax.swing.JButton btExcluir;
-    private javax.swing.JButton btFechar;
-    private javax.swing.JButton btPesquisar;
-    private javax.swing.JButton btSalvar;
-    private javax.swing.JCheckBox checkBoxEstampa;
-    private javax.swing.JComboBox<String> comboTamanho;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable tabelaProduto;
-    private javax.swing.JTextField txtCodigo;
-    private javax.swing.JTextField txtCor;
-    private javax.swing.JTextField txtDescricao;
-    private javax.swing.JTextField txtEstampa;
-    private javax.swing.JTextField txtEstilo;
-    private javax.swing.JTextField txtModelo;
-    private javax.swing.JTextField txtPesqProduto;
-    private javax.swing.JTextField txtQuantidade;
-    // End of variables declaration//GEN-END:variables
+        try {
+            produto.setPreco(new BigDecimal(txtPrecoVenda.getText().replace(",", ".")));
+        } catch (NumberFormatException e) {
+            produto.setPreco(BigDecimal.ZERO);
+        }
+        
+        try {
+            produto.setEstoque(Integer.parseInt(txtEstoque.getText().trim()));
+        } catch (NumberFormatException e) {
+            produto.setEstoque(0);
+        }
+        
+        produto.setAtivo(chkAtivo.isSelected());
+        
+        return produto;
+    }
+    
+    private void preencherFormulario(Produto produto) {
+        txtId.setText(produto.getId() != null ? produto.getId().toString() : "");
+        txtNome.setText(produto.getNome());
+        txtCodigo.setText(produto.getCodigo());
+        txtDescricao.setText(produto.getDescricao());
+        txtPrecoVenda.setText(produto.getPreco() != null ? produto.getPreco().toString() : "");
+        txtEstoque.setText(produto.getEstoque() != null ? produto.getEstoque().toString() : "");
+        chkAtivo.setSelected(produto.getAtivo());
+    }
+    
+    private JButton criarBotao(String texto, Color cor) {
+        JButton botao = new JButton(texto);
+        botao.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        botao.setForeground(Color.WHITE);
+        botao.setBackground(cor);
+        botao.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
+        botao.setFocusPainted(false);
+        botao.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Efeito hover
+        botao.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                botao.setBackground(cor.brighter());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                botao.setBackground(cor);
+            }
+        });
+        
+        return botao;
+    }
 }

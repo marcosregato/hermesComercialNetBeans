@@ -9,12 +9,7 @@ public class ConfigSistema {
     private static final Logger logger = LogManager.getLogger(ConfigSistema.class);
     
     public String getDataBase(){
-        try {
-            return "hermescomercial";
-        }catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-        return null;
+        return "hermescomercial";
     }
     
 }

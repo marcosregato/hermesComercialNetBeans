@@ -5,17 +5,73 @@
  */
 package com.br.hermescomercialnetbeans.view;
 
+import com.br.hermescomercialnetbeans.dao.ProdutoDao;
+import com.br.hermescomercialnetbeans.dao.VendaDao;
+import com.br.hermescomercialnetbeans.dao.ItemVendaDao;
+import com.br.hermescomercialnetbeans.dao.PagamentoDao;
+import com.br.hermescomercialnetbeans.controller.VendaController;
+import com.br.hermescomercialnetbeans.model.Produto;
+import com.br.hermescomercialnetbeans.model.Venda;
+import com.br.hermescomercialnetbeans.model.ItemVenda;
+import com.br.hermescomercialnetbeans.model.Pagamento;
+import com.br.hermescomercialnetbeans.model.Usuario;
+import com.br.hermescomercialnetbeans.utils.EmissorCupomFiscal;
+import java.util.List;
+import java.util.ArrayList;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.JComboBox;
+import javax.swing.JTextField;
+import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
+
 /**
  *
  * @author marcos
  */
 public class TelaVenda extends javax.swing.JInternalFrame {
 
+    private DefaultTableModel modeloVenda;
+    private double totalVenda = 0.0;
+    private VendaController vendaController = new VendaController();
+    private Venda vendaAtual;
+    private List<ItemVenda> itensVenda;
+    private List<Pagamento> pagamentos;
+    private VendaDao vendaDao = new VendaDao();
+    private ItemVendaDao itemVendaDao = new ItemVendaDao();
+    private PagamentoDao pagamentoDao = new PagamentoDao();
+    private ProdutoDao produtoDao = new ProdutoDao();
+    private Usuario usuarioLogado;
+
     /**
      * Creates new form TelaVenda
      */
     public TelaVenda() {
         initComponents();
+        configurarTabela();
+        inicializarVenda();
+    }
+    
+    public TelaVenda(Usuario usuario) {
+        this.usuarioLogado = usuario;
+        initComponents();
+        configurarTabela();
+        inicializarVenda();
+    }
+    
+    private void inicializarVenda() {
+        vendaAtual = new Venda();
+        if (usuarioLogado != null) {
+            vendaAtual.setUsuarioId(usuarioLogado.getId() != null ? usuarioLogado.getId().longValue() : null);
+            vendaAtual.setUsuarioNome(usuarioLogado.getNome());
+        }
+        itensVenda = new ArrayList<>();
+        pagamentos = new ArrayList<>();
+    }
+
+    private void configurarTabela() {
+        modeloVenda = (DefaultTableModel) tabelaItens.getModel();
+        tabelaItens.setRowHeight(25);
     }
 
     /**
@@ -33,8 +89,20 @@ public class TelaVenda extends javax.swing.JInternalFrame {
         btPesquisar = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tabelaItens = new javax.swing.JTable();
+        lblTotal = new javax.swing.JLabel();
+        btFinalizar = new javax.swing.JButton();
+        btRemoverItem = new javax.swing.JButton();
+        btImprimirCupom = new javax.swing.JButton();
 
         jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+
+        txtCodigo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtCodigoActionPerformed(evt);
+            }
+        });
 
         txtDescricao.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -43,6 +111,11 @@ public class TelaVenda extends javax.swing.JInternalFrame {
         });
 
         btPesquisar.setText("PESQUISAR");
+        btPesquisar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                adicionarProduto();
+            }
+        });
 
         jLabel1.setText("Código :");
 
@@ -63,7 +136,7 @@ public class TelaVenda extends javax.swing.JInternalFrame {
                 .addComponent(txtDescricao, javax.swing.GroupLayout.PREFERRED_SIZE, 310, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(btPesquisar)
-                .addContainerGap(165, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -78,13 +151,59 @@ public class TelaVenda extends javax.swing.JInternalFrame {
                 .addContainerGap(27, Short.MAX_VALUE))
         );
 
+        tabelaItens.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {},
+            new String [] {
+                "Item", "Código", "Descrição", "Qtd", "Vl. Unit", "Subtotal"
+            }
+        ));
+        jScrollPane1.setViewportView(tabelaItens);
+
+        lblTotal.setFont(new java.awt.Font("Tahoma", 1, 24)); // NOI18N
+        lblTotal.setText("TOTAL: R$ 0,00");
+
+        btFinalizar.setBackground(new java.awt.Color(0, 153, 51));
+        btFinalizar.setForeground(new java.awt.Color(255, 255, 255));
+        btFinalizar.setText("FINALIZAR VENDA (F10)");
+        btFinalizar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btFinalizarActionPerformed(evt);
+            }
+        });
+
+        btRemoverItem.setText("Remover Item");
+        btRemoverItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btRemoverItemActionPerformed(evt);
+            }
+        });
+
+        btImprimirCupom.setBackground(new java.awt.Color(0, 102, 204));
+        btImprimirCupom.setForeground(new java.awt.Color(255, 255, 255));
+        btImprimirCupom.setText("Imprimir Cupom");
+        btImprimirCupom.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btImprimirCupomActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addComponent(btRemoverItem)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btImprimirCupom)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(lblTotal, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(btFinalizar, javax.swing.GroupLayout.DEFAULT_SIZE, 250, Short.MAX_VALUE))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -92,7 +211,16 @@ public class TelaVenda extends javax.swing.JInternalFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(265, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 280, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(lblTotal)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btFinalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btRemoverItem)
+                    .addComponent(btImprimirCupom))
+                .addContainerGap(20, Short.MAX_VALUE))
         );
 
         pack();
@@ -102,12 +230,221 @@ public class TelaVenda extends javax.swing.JInternalFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtDescricaoActionPerformed
 
+    private void txtCodigoActionPerformed(java.awt.event.ActionEvent evt) {                                          
+        adicionarProduto();
+    }                                         
+
+    private void adicionarProduto() {
+        String codigoStr = txtCodigo.getText().trim();
+        if (codigoStr.isEmpty()) return;
+
+        try {
+            List<Produto> produtos = produtoDao.buscar(codigoStr);
+            
+            if (!produtos.isEmpty()) {
+                Produto p = produtos.get(0);
+                // Valor unitário simulado - em um sistema real viria do banco
+                double valorUnit = 10.0; 
+                int qtd = 1;
+                
+                // Criar ItemVenda
+                ItemVenda item = new ItemVenda(
+                    vendaAtual.getId(),
+                    Long.parseLong(p.getCodigo()),
+                    p.getCodigo(),
+                    p.getNome() != null ? p.getNome() : p.getDescricao(),
+                    qtd,
+                    valorUnit
+                );
+                
+                itensVenda.add(item);
+                
+                Object[] linha = {
+                    modeloVenda.getRowCount() + 1,
+                    item.getProdutoCodigo(),
+                    item.getProdutoDescricao(),
+                    item.getQuantidade(),
+                    item.getValorUnitario(),
+                    item.getSubtotal()
+                };
+                modeloVenda.addRow(linha);
+                totalVenda += item.getSubtotal();
+                vendaAtual.setValorTotal(totalVenda);
+                lblTotal.setText(String.format("TOTAL: R$ %.2f", totalVenda));
+                
+                txtCodigo.setText("");
+                txtCodigo.requestFocus();
+            } else {
+                JOptionPane.showMessageDialog(this, "Produto não encontrado!");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
+        }
+    }
+
+    private void btRemoverItemActionPerformed(java.awt.event.ActionEvent evt) {
+        int linha = tabelaItens.getSelectedRow();
+        if (linha >= 0) {
+            double subtotal = (double) modeloVenda.getValueAt(linha, 5);
+            totalVenda -= subtotal;
+            modeloVenda.removeRow(linha);
+            
+            // Remover da lista de itens
+            if (linha < itensVenda.size()) {
+                itensVenda.remove(linha);
+            }
+            
+            vendaAtual.setValorTotal(totalVenda);
+            lblTotal.setText(String.format("TOTAL: R$ %.2f", totalVenda));
+        }
+    }
+
+    private void btFinalizarActionPerformed(java.awt.event.ActionEvent evt) {
+        if (modeloVenda.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "Adicione itens antes de finalizar!");
+            return;
+        }
+
+        // Exibir diálogo de pagamento
+        if (exibirDialogoPagamento()) {
+            try {
+                // Salvar venda
+                vendaDao.salvar(vendaAtual);
+                
+                // Salvar itens da venda
+                for (ItemVenda item : itensVenda) {
+                    item.setVendaId(vendaAtual.getId());
+                    itemVendaDao.salvar(item);
+                }
+                
+                // Salvar pagamentos
+                for (Pagamento pag : pagamentos) {
+                    pag.setVendaId(vendaAtual.getId());
+                    pagamentoDao.salvar(pag);
+                }
+                
+                // Integrar com financeiro existente
+                vendaController.finalizarCompra(modeloVenda, totalVenda);
+                
+                // Gerar e imprimir cupom fiscal
+                String cupom = EmissorCupomFiscal.gerarCupomFiscal(vendaAtual, itensVenda, pagamentos);
+                EmissorCupomFiscal.imprimirCupom(cupom);
+                
+                // Salvar cupom em arquivo
+                String nomeArquivo = "cupom_" + vendaAtual.getCodigo() + ".txt";
+                EmissorCupomFiscal.salvarCupomArquivo(cupom, nomeArquivo);
+                
+                JOptionPane.showMessageDialog(this, "Venda Finalizada com sucesso!\nCódigo: " + vendaAtual.getCodigo() + "\nCupom impresso e salvo!");
+                limparVenda();
+                
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Erro ao processar venda: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    private boolean exibirDialogoPagamento() {
+        // Criar diálogo de pagamento
+        JComboBox<Pagamento.FormaPagamento> comboForma = new JComboBox<>(Pagamento.FormaPagamento.values());
+        JTextField txtValor = new JTextField(String.valueOf(totalVenda));
+        JTextField txtValorRecebido = new JTextField(String.valueOf(totalVenda));
+        
+        Object[] mensagem = {
+            "Forma de Pagamento:", comboForma,
+            "Valor Total:", txtValor,
+            "Valor Recebido:", txtValorRecebido
+        };
+        
+        int option = JOptionPane.showConfirmDialog(this, mensagem, "Pagamento", JOptionPane.OK_CANCEL_OPTION);
+        
+        if (option == JOptionPane.OK_OPTION) {
+            try {
+                double valor = Double.parseDouble(txtValor.getText());
+                double valorRecebido = Double.parseDouble(txtValorRecebido.getText());
+                Pagamento.FormaPagamento forma = (Pagamento.FormaPagamento) comboForma.getSelectedItem();
+                
+                Pagamento pagamento = new Pagamento(null, forma, valor);
+                pagamento.setValorRecebido(valorRecebido);
+                pagamento.confirmarPagamento();
+                
+                pagamentos.add(pagamento);
+                vendaAtual.setTipoPagamento(forma.getDescricao());
+                vendaAtual.setStatus("FINALIZADA");
+                
+                if (pagamento.precisaTroco()) {
+                    JOptionPane.showMessageDialog(this, "Troco: R$ " + String.format("%.2f", pagamento.getTroco()));
+                }
+                
+                return true;
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Valores inválidos!", "Erro", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+        
+        return false;
+    }
+    
+    private void btImprimirCupomActionPerformed(java.awt.event.ActionEvent evt) {
+        if (modeloVenda.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "Adicione itens antes de imprimir o cupom!");
+            return;
+        }
+        
+        try {
+            // Gerar cupom fiscal simulado
+            String cupom = EmissorCupomFiscal.gerarCupomFiscal(vendaAtual, itensVenda, pagamentos);
+            
+            // Exibir cupom em diálogo
+            JTextArea textArea = new JTextArea(cupom);
+            textArea.setEditable(false);
+            textArea.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 10));
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            scrollPane.setPreferredSize(new java.awt.Dimension(400, 600));
+            
+            int option = JOptionPane.showOptionDialog(
+                this,
+                scrollPane,
+                "Visualização do Cupom Fiscal",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                new Object[]{"Imprimir", "Salvar", "Cancelar"},
+                "Imprimir"
+            );
+            
+            if (option == 0) { // Imprimir
+                EmissorCupomFiscal.imprimirCupom(cupom);
+                JOptionPane.showMessageDialog(this, "Cupom enviado para impressão!");
+            } else if (option == 1) { // Salvar
+                String nomeArquivo = "cupom_previa_" + System.currentTimeMillis() + ".txt";
+                EmissorCupomFiscal.salvarCupomArquivo(cupom, nomeArquivo);
+                JOptionPane.showMessageDialog(this, "Cupom salvo em arquivo: " + nomeArquivo);
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao gerar cupom: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private void limparVenda() {
+        modeloVenda.setRowCount(0);
+        totalVenda = 0;
+        lblTotal.setText("TOTAL: R$ 0,00");
+        inicializarVenda();
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btFinalizar;
     private javax.swing.JButton btPesquisar;
+    private javax.swing.JButton btRemoverItem;
+    private javax.swing.JButton btImprimirCupom;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTable tabelaItens;
+    private javax.swing.JLabel lblTotal;
     private javax.swing.JTextField txtCodigo;
     private javax.swing.JTextField txtDescricao;
     // End of variables declaration//GEN-END:variables

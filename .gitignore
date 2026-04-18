@@ -1,0 +1,30 @@
+# Compilação e Binários
+**/target/
+**/build/
+**/dist/
+*.class
+*.jar
+*.war
+*.ear
+
+# NetBeans
+nbproject/private/
+nbbuild/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+
+# Log4j e Logs do sistema
+*.log
+logs/
+
+# IDEs alternativas (IntelliJ e Eclipse)
+.idea/
+*.iml
+.settings/
+.project
+.classpath
+
+# Arquivos do Sistema Operacional
+.DS_Store
+Thumbs.db
