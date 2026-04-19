@@ -9,19 +9,50 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+/**
+ * Classe Singleton para gerenciamento de conexões com banco de dados
+ * Implementa o padrão Singleton para garantir uma única instância no sistema
+ * @author marcos
+ */
 public class ConnectionBD {
 
-    private static final String URL_POSTGRES = ConfigProperties.getProperty("URL_POSTGRES");
-    private static final String USER_POSTGRES = ConfigProperties.getProperty("USER_POSTGRES");
-    private static final String SENHA_POSTGRES = ConfigProperties.getProperty("PASSWORD_POSTGRES");
+    // Instância única do Singleton
+    private static ConnectionBD instance;
+    
+    // Configurações do banco de dados
+    private static final String URL_POSTGRES = ConfigProperties.getPropertyStatic("URL_POSTGRES");
+    private static final String USER_POSTGRES = ConfigProperties.getPropertyStatic("USER_POSTGRES");
+    private static final String SENHA_POSTGRES = ConfigProperties.getPropertyStatic("PASSWORD_POSTGRES");
 
-    private static final String URL_SQLITE = ConfigProperties.getProperty("PATH_SQLITE_DB");
+    private static final String URL_SQLITE = ConfigProperties.getPropertyStatic("PATH_SQLITE_DB");
 
-    private static final String URL_MYSQL = ConfigProperties.getProperty("URL_MYSQL");
-    private static final String USER_MYSQL = ConfigProperties.getProperty("USER_MYSQL"); // Corrigido de USERL_MYSQL
-    private static final String SENHA_MYSQL = ConfigProperties.getProperty("PASSWORD_MYSQL");
+    private static final String URL_MYSQL = ConfigProperties.getPropertyStatic("URL_MYSQL");
+    private static final String USER_MYSQL = ConfigProperties.getPropertyStatic("USER_MYSQL");
+    private static final String SENHA_MYSQL = ConfigProperties.getPropertyStatic("PASSWORD_MYSQL");
 
     private static final Logger logger = LogManager.getLogger(ConnectionBD.class);
+
+    /**
+     * Construtor privado para implementar o padrão Singleton
+     */
+    private ConnectionBD() {
+        logger.info("Instância do ConnectionBD Singleton criada");
+    }
+
+    /**
+     * Método estático para obter a instância única do Singleton
+     * @return instância única de ConnectionBD
+     */
+    public static synchronized ConnectionBD getInstance() {
+        if (instance == null) {
+            synchronized (ConnectionBD.class) {
+                if (instance == null) {
+                    instance = new ConnectionBD();
+                }
+            }
+        }
+        return instance;
+    }
 
     public Connection getConnection(String nomeBanco) {
         logger.info("Iniciando tentativa de conexão com o banco: " + nomeBanco);

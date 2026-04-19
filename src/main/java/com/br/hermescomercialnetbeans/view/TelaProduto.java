@@ -8,14 +8,12 @@ import org.apache.logging.log4j.LogManager;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -68,8 +66,6 @@ public class TelaProduto extends JInternalFrame {
     private static final Color COR_SECUNDARIA = new Color(52, 73, 94);
     private static final Color COR_SUCESSO = new Color(39, 174, 96);
     private static final Color COR_PERIGO = new Color(231, 76, 60);
-    private static final Color COR_FUNDO = new Color(236, 240, 241);
-    private static final Color COR_TEXTO = new Color(44, 62, 80);
     
     public TelaProduto() {
         super("Cadastro de Produtos");
@@ -524,8 +520,10 @@ public class TelaProduto extends JInternalFrame {
     private Produto criarProdutoDoFormulario() {
         Produto produto = new Produto();
         
-        // ID não é mais necessário no formulário
-        // O sistema tratará como novo produto ou atualização baseada no produtoSelecionado
+        // Se há um produto selecionado, usamos seu ID para atualização
+        if (produtoSelecionado != null) {
+            produto.setId(produtoSelecionado.getId());
+        }
         
         produto.setNome(txtNome.getText().trim());
         produto.setCodigo(txtCodigo.getText().trim());

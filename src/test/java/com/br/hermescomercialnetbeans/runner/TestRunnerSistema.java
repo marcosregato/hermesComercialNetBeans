@@ -146,15 +146,6 @@ public class TestRunnerSistema {
     }
     
     /**
-     * Extrai o nome do teste de uma linha de saída
-     */
-    private static String extrairNomeTeste(String linha) {
-        // Implementação simplificada - em um cenário real seria mais robusto
-        if (linha.contains("UsuarioDaoIntegrationTest")) return "UsuarioDaoIntegrationTest";
-        return null;
-    }
-    
-    /**
      * Exibe o rodapé da tabela de testes
      */
     private static void exibirRodapeTabela() {

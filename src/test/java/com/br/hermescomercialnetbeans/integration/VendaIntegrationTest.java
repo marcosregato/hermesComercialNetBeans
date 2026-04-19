@@ -1,7 +1,6 @@
 package com.br.hermescomercialnetbeans.integration;
 
 import com.br.hermescomercialnetbeans.controller.VendaController;
-import com.br.hermescomercialnetbeans.dao.VendaDao;
 import com.br.hermescomercialnetbeans.model.Venda;
 import com.br.hermescomercialnetbeans.model.ItemVenda;
 import com.br.hermescomercialnetbeans.model.Pagamento;
@@ -12,16 +11,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.swing.table.DefaultTableModel;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class VendaIntegrationTest {
@@ -159,7 +155,6 @@ class VendaIntegrationTest {
     @DisplayName("Deve manter consistência de dados na integração")
     void testConsistenciaDadosIntegracao() {
         // Arrange
-        Venda venda = criarVendaTeste();
         String dataOriginal = "01/12/2023";
         
         // Act - Processar dados através de múltiplos componentes

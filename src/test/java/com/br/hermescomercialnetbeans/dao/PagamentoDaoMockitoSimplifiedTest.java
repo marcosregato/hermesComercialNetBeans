@@ -56,6 +56,10 @@ class PagamentoDaoMockitoSimplifiedTest {
             try {
                 Pagamento resultado = pagamentoDao.buscarPorId(pagamentoTeste.getId());
                 // Pode retornar null devido à falta de conexão
+                // Verificação para usar a variável
+                if (resultado != null) {
+                    assertEquals(pagamentoTeste.getId(), resultado.getId());
+                }
             } catch (Exception e) {
                 // Esperado pois não temos conexão real
                 assertNotNull(e);

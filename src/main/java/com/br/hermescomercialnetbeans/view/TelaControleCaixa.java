@@ -61,7 +61,7 @@ public class TelaControleCaixa extends javax.swing.JInternalFrame {
             btFecharCaixa.setEnabled(true);
             btSangria.setEnabled(true);
             btSuprimento.setEnabled(true);
-            lblStatusCaixa.setText("CAIXA ABERTO");
+            lblStatusCaixa.setText("CAIXA ABERTO - ID: " + caixaAberto.getId());
             lblStatusCaixa.setForeground(new java.awt.Color(0, 128, 0));
         } else {
             caixaAberto = null;
@@ -225,7 +225,6 @@ public class TelaControleCaixa extends javax.swing.JInternalFrame {
         verificarCaixaAberto();
     }
 
-    @SuppressWarnings("unchecked")
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();

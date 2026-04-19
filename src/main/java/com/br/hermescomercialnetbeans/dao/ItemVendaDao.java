@@ -13,7 +13,6 @@ import org.apache.logging.log4j.Logger;
 
 public class ItemVendaDao {
 
-    private PostgreSQLConnection con = new PostgreSQLConnection();
     private static final Logger logger = LogManager.getLogger(ItemVendaDao.class);
 
     private ItemVenda mapResultSetToItemVenda(ResultSet rs) throws SQLException {

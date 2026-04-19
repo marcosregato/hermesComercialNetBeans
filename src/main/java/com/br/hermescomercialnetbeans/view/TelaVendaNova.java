@@ -10,17 +10,16 @@ import com.br.hermescomercialnetbeans.model.ItemVenda;
 import com.br.hermescomercialnetbeans.model.Pagamento;
 import com.br.hermescomercialnetbeans.model.Usuario;
 import com.br.hermescomercialnetbeans.utils.EmissorCupomFiscal;
+import com.br.hermescomercialnetbeans.utils.ResponsiveUI;
+import com.br.hermescomercialnetbeans.utils.FontConfig;
 import org.apache.logging.log4j.LogManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,8 +90,6 @@ public class TelaVendaNova extends JInternalFrame {
     private static final Color COR_PRIMARIA = new Color(41, 128, 185);
     private static final Color COR_SUCESSO = new Color(39, 174, 96);
     private static final Color COR_PERIGO = new Color(231, 76, 60);
-    private static final Color COR_FUNDO = new Color(236, 240, 241);
-    private static final Color COR_TEXTO = new Color(44, 62, 80);
     
     public TelaVendaNova(Usuario usuario) {
         super("Ponto de Venda - PDV");
@@ -107,6 +104,17 @@ public class TelaVendaNova extends JInternalFrame {
         configurarLayout();
         configurarEventos();
         iniciarNovaVenda();
+        
+        // Aplicar design responsivo
+        ResponsiveUI.makeResponsive(this);
+        
+        // Aplicar fonte padrão a todos os componentes
+        FontConfig.aplicarFontePadraoRecursivo(this);
+        
+        // Configurar tamanho mínimo e preferido
+        setMinimumSize(new Dimension(800, 600));
+        setPreferredSize(new Dimension(1200, 800));
+        pack();
     }
     
     private void inicializarComponentes() {
@@ -119,17 +127,17 @@ public class TelaVendaNova extends JInternalFrame {
         
         // Topo
         lblNumeroVenda = new JLabel("Venda: #0001");
-        lblNumeroVenda.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblNumeroVenda.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblNumeroVenda.setForeground(COR_PRIMARIA);
         
         lblDataHora = new JLabel();
-        lblDataHora.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblDataHora.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         
         lblOperador = new JLabel("Operador: " + (usuarioLogado != null ? usuarioLogado.getNome() : "Sistema"));
-        lblOperador.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblOperador.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         
         lblCliente = new JLabel("Cliente: Consumidor Final");
-        lblCliente.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblCliente.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         
         // Centro - Produtos
         txtCodigoBarras = criarCampoTexto("Código de Barras", 15);
@@ -151,9 +159,9 @@ public class TelaVendaNova extends JInternalFrame {
         modeloTabela.addColumn("Total");
         
         tabelaItens = new JTable(modeloTabela);
-        tabelaItens.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tabelaItens.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tabelaItens.setRowHeight(25);
-        tabelaItens.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tabelaItens.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
         tabelaItens.getTableHeader().setBackground(COR_PRIMARIA);
         tabelaItens.getTableHeader().setForeground(Color.WHITE);
         
@@ -162,12 +170,12 @@ public class TelaVendaNova extends JInternalFrame {
         
         // Direita - Resumo
         lblSubtotal = new JLabel("Subtotal: R$ 0,00");
-        lblSubtotal.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblSubtotal.setFont(new Font("Segoe UI", Font.BOLD, 16));
         
         txtDesconto = criarCampoTexto("0,00", 10);
         
         lblDesconto = new JLabel("Desconto: R$ 0,00");
-        lblDesconto.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblDesconto.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         
         lblTotal = new JLabel("TOTAL: R$ 0,00");
         lblTotal.setFont(new Font("Segoe UI", Font.BOLD, 18));
@@ -307,16 +315,6 @@ public class TelaVendaNova extends JInternalFrame {
     }
     
     private void configurarEventos() {
-        // Evento do código de barras
-        txtCodigoBarras.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    pesquisarProdutoPorCodigo();
-                }
-            }
-        });
-        
         // Evento do botão pesquisar
         btPesquisarProduto.addActionListener(e -> pesquisarProdutoPorCodigo());
         
@@ -328,6 +326,9 @@ public class TelaVendaNova extends JInternalFrame {
             @Override
             public void keyReleased(KeyEvent e) {
                 calcularValorTotalItem();
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    adicionarItem();
+                }
             }
         });
         
@@ -660,7 +661,7 @@ public class TelaVendaNova extends JInternalFrame {
     
     private JTextField criarCampoTexto(String placeholder, int columns) {
         JTextField campo = new JTextField(columns);
-        campo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        campo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         campo.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(COR_PRIMARIA, 1),
             BorderFactory.createEmptyBorder(5, 8, 5, 8)
@@ -670,7 +671,7 @@ public class TelaVendaNova extends JInternalFrame {
     
     private JButton criarBotao(String texto, Color cor) {
         JButton botao = new JButton(texto);
-        botao.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        botao.setFont(new Font("Segoe UI", Font.BOLD, 14));
         botao.setForeground(Color.WHITE);
         botao.setBackground(cor);
         botao.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));

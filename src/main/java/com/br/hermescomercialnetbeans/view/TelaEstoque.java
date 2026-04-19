@@ -2,18 +2,16 @@ package com.br.hermescomercialnetbeans.view;
 
 import com.br.hermescomercialnetbeans.dao.ProdutoDao;
 import com.br.hermescomercialnetbeans.model.Produto;
+import com.br.hermescomercialnetbeans.utils.ResponsiveUI;
 import org.apache.logging.log4j.LogManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -79,9 +77,7 @@ public class TelaEstoque extends JInternalFrame {
     private static final Color COR_SUCESSO = new Color(39, 174, 96);
     private static final Color COR_PERIGO = new Color(231, 76, 60);
     private static final Color COR_ADVERTENCIA = new Color(243, 156, 18);
-    private static final Color COR_FUNDO = new Color(236, 240, 241);
-    private static final Color COR_TEXTO = new Color(44, 62, 80);
-    
+      
     public TelaEstoque() {
         super("Controle de Estoque");
         this.produtoDao = new ProdutoDao();
@@ -90,6 +86,14 @@ public class TelaEstoque extends JInternalFrame {
         configurarLayout();
         configurarEventos();
         carregarEstoque();
+        
+        // Aplicar design responsivo
+        ResponsiveUI.makeResponsive(this);
+        
+        // Configurar tamanho mínimo e preferido
+        setMinimumSize(new Dimension(900, 700));
+        setPreferredSize(new Dimension(1200, 800));
+        pack();
     }
     
     private void inicializarComponentes() {
@@ -104,15 +108,15 @@ public class TelaEstoque extends JInternalFrame {
         comboCategoria = new JComboBox<>(new String[]{
             "Todas", "Alimentos", "Bebidas", "Limpeza", "Eletrônicos", "Vestuário", "Outros"
         });
-        comboCategoria.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        comboCategoria.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         
         comboStatus = new JComboBox<>(new String[]{
             "Todos", "Ativos", "Inativos"
         });
-        comboStatus.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        comboStatus.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         
         chkEstoqueBaixo = new JCheckBox("Estoque Baixo (< 10)");
-        chkEstoqueBaixo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        chkEstoqueBaixo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         chkEstoqueBaixo.setOpaque(false);
         
         btPesquisar = criarBotao("Pesquisar", COR_PRIMARIA);
@@ -120,19 +124,19 @@ public class TelaEstoque extends JInternalFrame {
         
         // Estatísticas
         lblTotalProdutos = new JLabel("Total Produtos: 0");
-        lblTotalProdutos.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblTotalProdutos.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblTotalProdutos.setForeground(COR_PRIMARIA);
         
         lblValorTotalEstoque = new JLabel("Valor Total: R$ 0,00");
-        lblValorTotalEstoque.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblValorTotalEstoque.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblValorTotalEstoque.setForeground(COR_SUCESSO);
         
         lblProdutosEstoqueBaixo = new JLabel("Estoque Baixo: 0");
-        lblProdutosEstoqueBaixo.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblProdutosEstoqueBaixo.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblProdutosEstoqueBaixo.setForeground(COR_ADVERTENCIA);
         
         lblProdutosSemEstoque = new JLabel("Sem Estoque: 0");
-        lblProdutosSemEstoque.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblProdutosSemEstoque.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblProdutosSemEstoque.setForeground(COR_PERIGO);
         
         // Botões de ação
@@ -155,9 +159,9 @@ public class TelaEstoque extends JInternalFrame {
         modeloTabela.addColumn("Status");
         
         tabelaEstoque = new JTable(modeloTabela);
-        tabelaEstoque.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tabelaEstoque.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tabelaEstoque.setRowHeight(25);
-        tabelaEstoque.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tabelaEstoque.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
         tabelaEstoque.getTableHeader().setBackground(COR_PRIMARIA);
         tabelaEstoque.getTableHeader().setForeground(Color.WHITE);
         
@@ -726,7 +730,7 @@ public class TelaEstoque extends JInternalFrame {
     
     private JTextField criarCampoTexto(String placeholder, int columns) {
         JTextField campo = new JTextField(columns);
-        campo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        campo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         campo.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(COR_PRIMARIA, 1),
             BorderFactory.createEmptyBorder(5, 8, 5, 8)
@@ -736,7 +740,7 @@ public class TelaEstoque extends JInternalFrame {
     
     private JButton criarBotao(String texto, Color cor) {
         JButton botao = new JButton(texto);
-        botao.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        botao.setFont(new Font("Segoe UI", Font.BOLD, 14));
         botao.setForeground(Color.WHITE);
         botao.setBackground(cor);
         botao.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));

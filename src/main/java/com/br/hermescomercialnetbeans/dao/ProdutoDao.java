@@ -24,7 +24,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class ProdutoDao  {
 
-    private PostgreSQLConnection con = new PostgreSQLConnection();
     private static final Logger logger = LogManager.getLogger(ProdutoDao.class);
 
         

@@ -1,12 +1,7 @@
 
 package com.br.hermescomercialnetbeans.config;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class ConfigSistema {
-
-    private static final Logger logger = LogManager.getLogger(ConfigSistema.class);
     
     public String getDataBase(){
         return "hermescomercial";

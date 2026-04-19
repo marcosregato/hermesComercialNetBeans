@@ -73,6 +73,10 @@ class UsuarioDaoMockitoSimplifiedTest {
             try {
                 Usuario resultado = usuarioDao.buscarPorId(usuarioTeste.getId());
                 // Pode retornar null devido à falta de conexão
+                // Verificação para usar a variável
+                if (resultado != null) {
+                    assertEquals(usuarioTeste.getId(), resultado.getId());
+                }
             } catch (Exception e) {
                 // Esperado pois não temos conexão real
                 assertNotNull(e);
@@ -88,6 +92,10 @@ class UsuarioDaoMockitoSimplifiedTest {
             try {
                 Usuario resultado = usuarioDao.buscarPorLogin(usuarioTeste.getNome());
                 // Pode retornar null devido à falta de conexão
+                // Verificação para usar a variável
+                if (resultado != null) {
+                    assertEquals(usuarioTeste.getNome(), resultado.getNome());
+                }
             } catch (Exception e) {
                 // Esperado pois não temos conexão real
                 assertNotNull(e);

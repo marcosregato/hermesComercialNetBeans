@@ -154,11 +154,10 @@ class PDVFuncionalTestSimplificado {
     void testFluxoMultiplasVendasConsolidacao() {
         // Arrange
         Usuario caixa = criarUsuarioCaixa();
-        List<Produto> produtos = List.of(
-            criarProduto("PROD001", "Produto A", 10.00),
-            criarProduto("PROD002", "Produto B", 20.00),
-            criarProduto("PROD003", "Produto C", 30.00)
-        );
+        // Produtos disponíveis para vendas
+        criarProduto("PROD001", "Produto A", 10.00);
+        criarProduto("PROD002", "Produto B", 20.00);
+        criarProduto("PROD003", "Produto C", 30.00);
         
         List<Venda> vendasDoDia = new java.util.ArrayList<>();
         final double[] totalVendas = {0.0};
@@ -199,7 +198,6 @@ class PDVFuncionalTestSimplificado {
         Produto produto = criarProduto("PROD001", "Produto Limitado", 100.00);
         produto.setEstoque(2); // Estoque baixo
         
-        Venda venda = new Venda();
         ItemVenda item = new ItemVenda();
         item.setProdutoDescricao(produto.getNome());
         item.setQuantidade(5); // Tentar vender mais que o estoque

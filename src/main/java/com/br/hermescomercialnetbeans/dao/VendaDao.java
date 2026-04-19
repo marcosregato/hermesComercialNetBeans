@@ -15,7 +15,6 @@ import org.apache.logging.log4j.Logger;
 
 public class VendaDao {
 
-    private PostgreSQLConnection con = new PostgreSQLConnection();
     private static final Logger logger = LogManager.getLogger(VendaDao.class);
 
     private Venda mapResultSetToVenda(ResultSet rs) throws SQLException {

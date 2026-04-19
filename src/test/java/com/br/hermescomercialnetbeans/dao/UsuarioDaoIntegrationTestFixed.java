@@ -1,24 +1,21 @@
 package com.br.hermescomercialnetbeans.dao;
 
 import com.br.hermescomercialnetbeans.connectionDB.PostgreSQLConnection;
-import com.br.hermescomercialnetbeans.model.Usuario;
 import org.junit.jupiter.api.*;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.List;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class UsuarioDaoIntegrationTestFixed {
     
-    private UsuarioDao usuarioDao;
     private Connection connection;
     
     @BeforeEach
     void setUp() throws SQLException {
-        usuarioDao = new UsuarioDao();
         connection = PostgreSQLConnection.getConnection();
         
         // Limpar tabela de testes

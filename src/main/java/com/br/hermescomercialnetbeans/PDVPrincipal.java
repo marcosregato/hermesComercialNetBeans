@@ -1,6 +1,6 @@
 package com.br.hermescomercialnetbeans;
 
-import com.br.hermescomercialnetbeans.view.TelaPrincipal;
+import com.br.hermescomercialnetbeans.view.TelaLogin;
 import javax.swing.SwingUtilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,13 +26,15 @@ public class PDVPrincipal {
             }
         }
         
-        // Inicia a aplicação com tela principal
+        // Inicia a aplicação com tela de login
         SwingUtilities.invokeLater(() -> {
             try {
                 logger.info("Iniciando interface gráfica (Swing)");
-                TelaPrincipal telaPrincipal = new TelaPrincipal();
-                telaPrincipal.setVisible(true);
-                logger.info("Tela principal exibida com sucesso");
+                logger.info("Mostrando tela de login primeiro");
+                
+                TelaLogin telaLogin = new TelaLogin();
+                telaLogin.setVisible(true);
+                logger.info("Tela de login exibida com sucesso");
                 
             } catch (Exception e) {
                 logger.error("Erro ao iniciar aplicação: " + e.getMessage(), e);

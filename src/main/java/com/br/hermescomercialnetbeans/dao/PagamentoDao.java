@@ -15,7 +15,6 @@ import org.apache.logging.log4j.Logger;
 
 public class PagamentoDao {
 
-    private PostgreSQLConnection con = new PostgreSQLConnection();
     private static final Logger logger = LogManager.getLogger(PagamentoDao.class);
 
     private Pagamento mapResultSetToPagamento(ResultSet rs) throws SQLException {

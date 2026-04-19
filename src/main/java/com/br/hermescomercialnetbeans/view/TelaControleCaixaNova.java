@@ -8,8 +8,6 @@ import org.apache.logging.log4j.LogManager;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -60,9 +58,6 @@ public class TelaControleCaixaNova extends JInternalFrame {
     private static final Color COR_PRIMARIA = new Color(41, 128, 185);
     private static final Color COR_SUCESSO = new Color(39, 174, 96);
     private static final Color COR_PERIGO = new Color(231, 76, 60);
-    private static final Color COR_ADVERTENCIA = new Color(243, 156, 18);
-    private static final Color COR_FUNDO = new Color(236, 240, 241);
-    private static final Color COR_TEXTO = new Color(44, 62, 80);
     
     public TelaControleCaixaNova(Usuario usuario) {
         super("Controle de Caixa");
@@ -539,6 +534,9 @@ public class TelaControleCaixaNova extends JInternalFrame {
                     case FECHAMENTO:
                         saldo = saldo.subtract(new BigDecimal(movimento.getValor()));
                         break;
+                    case CANCELAMENTO:
+                        // Cancelamentos não afetam o saldo do caixa
+                        break;
                 }
             }
             
@@ -556,7 +554,6 @@ public class TelaControleCaixaNova extends JInternalFrame {
             BigDecimal totalVendas = BigDecimal.ZERO;
             BigDecimal totalSangrias = BigDecimal.ZERO;
             BigDecimal totalSuprimentos = BigDecimal.ZERO;
-            BigDecimal totalCancelamentos = BigDecimal.ZERO;
             
             for (MovimentoCaixa movimento : movimentos) {
                 BigDecimal valor = new BigDecimal(movimento.getValor());
@@ -573,6 +570,12 @@ public class TelaControleCaixaNova extends JInternalFrame {
                         break;
                     case CANCELAMENTO:
                         // Não soma cancelamentos nos totais
+                        break;
+                    case ABERTURA:
+                        // Não soma aberturas nos totais
+                        break;
+                    case FECHAMENTO:
+                        // Não soma fechamentos nos totais
                         break;
                 }
             }

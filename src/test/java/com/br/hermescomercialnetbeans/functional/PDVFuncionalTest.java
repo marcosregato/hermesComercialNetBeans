@@ -2,7 +2,6 @@ package com.br.hermescomercialnetbeans.functional;
 
 import com.br.hermescomercialnetbeans.dao.*;
 import com.br.hermescomercialnetbeans.model.*;
-import com.br.hermescomercialnetbeans.controller.VendaController;
 import com.br.hermescomercialnetbeans.utils.EmissorCupomFiscal;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,15 +35,6 @@ class PDVFuncionalTest {
     
     @Mock
     private MovimentoCaixaDao movimentoCaixaDao;
-    
-    private VendaController vendaController;
-    private EmissorCupomFiscal emissorCupom;
-    
-    @BeforeEach
-    void setUp() {
-        vendaController = new VendaController();
-        emissorCupom = new EmissorCupomFiscal();
-    }
     
     @Test
     @DisplayName("Fluxo completo: Abrir caixa -> Realizar venda -> Fechar caixa")
@@ -96,7 +86,6 @@ class PDVFuncionalTest {
     void testFluxoLoginEAcesso() {
         // Arrange
         String login = "caixa.teste";
-        String senha = "123456";
         
         // Act & Assert: Simular processo de login
         assertDoesNotThrow(() -> {
@@ -246,7 +235,6 @@ class PDVFuncionalTest {
         Produto produto = criarProduto("PROD001", "Produto Limitado", 100.00);
         produto.setEstoque(2); // Estoque baixo
         
-        Venda venda = new Venda();
         ItemVenda item = new ItemVenda();
         item.setProdutoDescricao(produto.getNome());
         item.setQuantidade(5); // Tentar vender mais que o estoque

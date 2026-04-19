@@ -801,8 +801,10 @@ public class TelaUsuario extends JInternalFrame {
     private Usuario criarUsuarioDoFormulario() {
         Usuario usuario = new Usuario();
         
-        // ID (se existir)
-        if (!txtId.getText().trim().isEmpty()) {
+        // Se há um usuário selecionado, usamos seu ID para atualização
+        if (usuarioSelecionado != null) {
+            usuario.setId(usuarioSelecionado.getId());
+        } else if (!txtId.getText().trim().isEmpty()) {
             try {
                 usuario.setId(Integer.parseInt(txtId.getText()));
             } catch (NumberFormatException e) {

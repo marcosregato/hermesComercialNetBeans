@@ -15,7 +15,7 @@ class ConfigPropertiesTest {
     
     @BeforeEach
     void setUp() {
-        configProperties = new ConfigProperties();
+        configProperties = ConfigProperties.getInstance();
     }
     
     @Test
@@ -28,13 +28,13 @@ class ConfigPropertiesTest {
     @DisplayName("Deve lidar com propriedades vazias")
     void testEmptyProperties() {
         // Não deve lançar exceção com propriedade vazia
-        assertDoesNotThrow(() -> ConfigProperties.getProperty(""));
+        assertDoesNotThrow(() -> configProperties.getProperty(""));
     }
     
     @Test
     @DisplayName("Deve lidar com propriedades inexistentes")
     void testInexistentProperties() {
         // Não deve lançar exceção com propriedade inexistente
-        assertDoesNotThrow(() -> ConfigProperties.getProperty("propriedade.inexistente.12345"));
+        assertDoesNotThrow(() -> configProperties.getProperty("propriedade.inexistente.12345"));
     }
 }

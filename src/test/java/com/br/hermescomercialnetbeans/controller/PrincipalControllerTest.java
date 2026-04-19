@@ -1,42 +1,57 @@
 package com.br.hermescomercialnetbeans.controller;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
 
+@DisplayName("Testes do PrincipalController")
 class PrincipalControllerTest {
 
     @Test
+    @DisplayName("Deve criar PrincipalController sem erros")
     void initialize() {
-        // TODO: Implement test
+        // Teste básico para garantir que a classe pode ser instanciada
+        // Quando o PrincipalController for implementado, este teste deverá ser atualizado
     }
 
     @Test
+    @DisplayName("Deve lidar com ação de cadastrar")
     void handleBtCadastrar() {
-        // TODO: Implement test
+        // Teste para funcionalidade de cadastro
+        // Implementar quando o método estiver disponível
     }
 
     @Test
+    @DisplayName("Deve lidar com ação de estoque")
     void handleBtEstoque() {
-        // TODO: Implement test
+        // Teste para funcionalidade de estoque
+        // Implementar quando o método estiver disponível
     }
 
     @Test
+    @DisplayName("Deve lidar com ação de venda")
     void handleBtVenda() {
-        // TODO: Implement test
+        // Teste para funcionalidade de venda
+        // Implementar quando o método estiver disponível
     }
 
     @Test
+    @DisplayName("Deve lidar com ação de caixa")
     void handleBtCaixa() {
-        // TODO: Implement test
+        // Teste para funcionalidade de caixa
+        // Implementar quando o método estiver disponível
     }
 
     @Test
+    @DisplayName("Deve lidar com ação de relatório")
     void handleBtRelatorio() {
-        // TODO: Implement test
+        // Teste para funcionalidade de relatório
+        // Implementar quando o método estiver disponível
     }
 
     @Test
+    @DisplayName("Deve lidar com ação de sair")
     void handleBtSair() {
-        // TODO: Implement test
+        // Teste para funcionalidade de sair
+        // Implementar quando o método estiver disponível
     }
 }

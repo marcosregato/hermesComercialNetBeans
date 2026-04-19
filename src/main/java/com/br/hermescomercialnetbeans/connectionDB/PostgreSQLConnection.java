@@ -8,10 +8,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Classe especializada para conexão com banco de dados PostgreSQL
+ * Classe Singleton especializada para conexão com banco de dados PostgreSQL
+ * Implementa o padrão Singleton para garantir uma única instância no sistema
  * @author marcos
  */
 public class PostgreSQLConnection {
+    
+    // Instância única do Singleton
+    private static PostgreSQLConnection instance;
     
     private static final Logger logger = LogManager.getLogger(PostgreSQLConnection.class);
     
@@ -19,6 +23,28 @@ public class PostgreSQLConnection {
     private static final String URL = "jdbc:postgresql://localhost:5432/hermescomercialdb";
     private static final String USER = "postgres";
     private static final String PASSWORD = "Abacaxi@121";
+
+    /**
+     * Construtor privado para implementar o padrão Singleton
+     */
+    private PostgreSQLConnection() {
+        logger.info("Instância do PostgreSQLConnection Singleton criada");
+    }
+
+    /**
+     * Método estático para obter a instância única do Singleton
+     * @return instância única de PostgreSQLConnection
+     */
+    public static synchronized PostgreSQLConnection getInstance() {
+        if (instance == null) {
+            synchronized (PostgreSQLConnection.class) {
+                if (instance == null) {
+                    instance = new PostgreSQLConnection();
+                }
+            }
+        }
+        return instance;
+    }
     
     /**
      * Obtém uma conexão com o banco PostgreSQL

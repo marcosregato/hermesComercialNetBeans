@@ -8,7 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -77,6 +76,10 @@ class ProdutoDaoMockitoSimplifiedTest {
             try {
                 Produto resultado = produtoDao.buscarPorId(produtoTeste.getId());
                 // Pode retornar null devido à falta de conexão
+                // Verificação para usar a variável
+                if (resultado != null) {
+                    assertEquals(produtoTeste.getId(), resultado.getId());
+                }
             } catch (Exception e) {
                 // Esperado pois não temos conexão real
                 assertNotNull(e);
@@ -92,6 +95,10 @@ class ProdutoDaoMockitoSimplifiedTest {
             try {
                 Produto resultado = produtoDao.buscarPorCodigo(produtoTeste.getCodigo());
                 // Pode retornar null devido à falta de conexão
+                // Verificação para usar a variável
+                if (resultado != null) {
+                    assertEquals(produtoTeste.getCodigo(), resultado.getCodigo());
+                }
             } catch (Exception e) {
                 // Esperado pois não temos conexão real
                 assertNotNull(e);

@@ -5,6 +5,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import com.br.hermescomercialnetbeans.model.Usuario;
 import com.br.hermescomercialnetbeans.dao.MovimentoCaixaDao;
+import com.br.hermescomercialnetbeans.utils.ResponsiveUI;
+import com.br.hermescomercialnetbeans.utils.FontConfig;
 
 public class TelaPrincipal extends javax.swing.JFrame {
 
@@ -120,7 +122,7 @@ public class TelaPrincipal extends javax.swing.JFrame {
         
         // Label de status
         JLabel lblStatus = new JLabel("Hermes Comercial PDV v1.0");
-        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setFont(FontConfig.getFontePadrao());
         lblStatus.setForeground(Color.GRAY);
         menuBar.add(lblStatus);
         
@@ -129,7 +131,7 @@ public class TelaPrincipal extends javax.swing.JFrame {
     
     private JMenu criarMenu(String texto, Color cor) {
         JMenu menu = new JMenu(texto);
-        menu.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        menu.setFont(FontConfig.getFonteSubtitulo());
         menu.setForeground(cor);
         menu.setBackground(Color.WHITE);
         menu.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
@@ -149,7 +151,7 @@ public class TelaPrincipal extends javax.swing.JFrame {
     
     private JMenuItem criarMenuItem(String texto, String tooltip) {
         JMenuItem item = new JMenuItem(texto);
-        item.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        item.setFont(FontConfig.getFontePadrao());
         item.setForeground(COR_TEXTO);
         item.setBackground(Color.WHITE);
         item.setToolTipText(tooltip);
@@ -180,20 +182,20 @@ public class TelaPrincipal extends javax.swing.JFrame {
         
         // Título principal
         JLabel lblTitulo = new JLabel("Hermes Comercial - Sistema PDV");
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblTitulo.setFont(FontConfig.getFonteGrande());
         lblTitulo.setForeground(COR_PRIMARIA);
         
         // Subtítulo
         String usuarioNome = usuarioLogado != null ? usuarioLogado.getNome() : "Operador";
         JLabel lblSubtitulo = new JLabel("Bem-vindo(a), " + usuarioNome + "!");
-        lblSubtitulo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblSubtitulo.setFont(FontConfig.getFonteSubtitulo());
         lblSubtitulo.setForeground(Color.GRAY);
         
         // Data e hora
         JLabel lblDataHora = new JLabel(java.time.LocalDateTime.now().format(
             java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
         ));
-        lblDataHora.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        lblDataHora.setFont(FontConfig.getFontePadrao());
         lblDataHora.setForeground(Color.DARK_GRAY);
         
         // Status do caixa
@@ -213,7 +215,7 @@ public class TelaPrincipal extends javax.swing.JFrame {
             lblStatusCaixa.setText("Status Caixa: Indisponível");
             lblStatusCaixa.setForeground(Color.GRAY);
         }
-        lblStatusCaixa.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblStatusCaixa.setFont(FontConfig.getFonteSubtitulo());
         
         // Painel esquerdo
         JPanel painelEsquerdo = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -242,6 +244,9 @@ public class TelaPrincipal extends javax.swing.JFrame {
         setSize(1400, 900);
         setLocationRelativeTo(null);
         setMinimumSize(new Dimension(1000, 600));
+        
+        // Aplicar design responsivo
+        ResponsiveUI.makeResponsive(this);
         
         // Ícone da aplicação (se disponível)
         try {
